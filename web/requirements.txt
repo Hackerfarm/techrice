@@ -1,0 +1,11 @@
+Flask
+flask_migrate==1.3.0
+flask-limiter==0.6.6
+flask-restful==0.3.0
+Werkzeug==0.9.4
+sqlalchemy==0.9.8
+psycopg2==2.5.4
+alembic==0.7.4
+pytest==2.6.4
+requests==2.4.3
+ujson
