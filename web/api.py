@@ -10,18 +10,6 @@ rest_api = restful.Api(flapp)
 # limiter = Limiter(flapp, global_limits=["30 per minute"])
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -41,23 +29,6 @@ from collections import Iterable
 
 
 from datetime import datetime, timedelta
-# class Hum(object):
-
-# 	def test(self):
-# 		print self.a
-
-# 	def test2(self):
-# 		print self.b
-	
-# 		# i = cls.__init__(*args, **kwargs)
-# 		# print i
-		
-
-# class Child(Hum):
-# 	def __init__(self, a):
-# 		self.a = a
-
-
 
 
 
@@ -66,14 +37,9 @@ class SatoyamaBase(object):
 	created = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
 	updated = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
 
-	# def __repr__(self):
-	# # 	# return str({'type': self.__class__, 'id': self.id})
-	# 	return str(self.__dict__)
 
 	def json(self):
 		assert False, "Not implemented"
-
-
 
 	@classmethod
 	def query_created_interval(cls, start, finish):
@@ -436,19 +402,20 @@ rest_api.add_resource(ReadingListResource, '/readings')
 from random import random
 import time
 import itertools
-def seed(days = 7, interval_seconds = 3600):
+def seed(sensors = 1, days = 7, interval_seconds = 3600):
 	site = Site.create(alias = 'seeded_site')
-	node = Node.create(alias = 'seeded_node', site = site)
+	node = Node.create(alias = 'seeded_node', site = site, latitude = 35.146623 + random(), longitude = 139.9835682 + random())
 	sensortype = SensorType.create(name = 'HC SR-04', unit = 'cm')
-	sensor = Sensor.create(sensortype = sensortype, node = node, alias = 'water distance')
-	timestamp = datetime.utcnow() - timedelta(days = 7)
-	data = loggeobrowngen()
-	n_readings = 0
-	while timestamp < datetime.utcnow():
-		Reading.create(sensor = sensor, value = data.next(), timestamp = timestamp)
-		timestamp += timedelta(seconds = interval_seconds)
-		n_readings += 1
-	return {'site': site, 'node': node, 'sensortype':sensortype, 'sensor':sensor, 'n_readings':n_readings}
+	for i in range(sensors):
+		sensor = Sensor.create(sensortype = sensortype, node = node, alias = 'water distance %s'%i)
+		timestamp = datetime.utcnow() - timedelta(days = 7)
+		data = loggeobrowngen()
+		n_readings = 0
+		while timestamp < datetime.utcnow():
+			Reading.create(sensor = sensor, value = data.next(), timestamp = timestamp)
+			timestamp += timedelta(seconds = interval_seconds)
+			n_readings += 1
+	return {'site': site, 'node': node}
 
 
 from multiprocessing import Process
@@ -476,103 +443,73 @@ class FakeRealtimeSensor(Process):
 
 
 
-
-@flapp.route('/chart/weekly/sensor/<int:sensor_id>')
-def weekly_chart(sensor_id):
-	from nvd3 import lineChart
-
-	# Open File for test
-	# ---------------------------------------
-	
-	
-	charttype = "lineChart"
-	# chart = lineChart(name=charttype, x_axis_format = "%d %b %Y %H", date_format = "%Y%m%d", width = 1000)
-	# chart = lineChart(name=charttype, height=550, width=850, color_category='category20b', x_is_date=True, x_axis_format="%d %b %Y %H")
-	chart = lineChart(name=charttype, height=550, width=850, color_category='category20b', x_is_date=True, x_axis_format="%b %d %a")
-
-	today = datetime.utcnow()
-	before = today - timedelta(days = 7)
-	data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.timestamp > before) & (Reading.timestamp < today)).all()
-	print len(data)
+def get_sensor_period_data(sensor_id, start_datetime, end_datetime):
+	data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.timestamp > start_datetime) & (Reading.timestamp < end_datetime)).all()
 	xdata = map(lambda r: time.mktime(r.timestamp.timetuple()) * 1000, data)
 	# ydata = map(lambda r: r.value, data)
 	ydata = list(loggeobrowngen(len(xdata)))
-	print len(xdata)
-	# xdata = range(n_points)
-	# xdata = [datetime(2015,12,i).strftime("%Y-%m-%d") for i in range(1,25)]
-	# xdata = [int(time.mktime((today + timedelta(i)).timetuple()) * 1000) for i in range(1,n_points + 1)]
-	# ydata = loggeobrown(n_points)
+	return xdata, ydata
+
+def get_chart_settings():
+	settings = {}
+	settings.update({'width': request.args.get('width', 850)})
+	settings.update({'height': request.args.get('height', 500)})
+	settings.update({'color_category': request.args.get('color_category', 'category20b')})
+	# settings.update({'color_category': request.args.get('height', 'category20b')})
+	# settings.update({'color_category': request.args.get('height', 'category20b')})
+
+	return settings
 
 
-	# xdata = [datetime(2015,1,i).strftime("%s.%f") for i in range(1, 1+n_points)]
-	# ydata = [0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 4, 3, 3, 5, 7, 5, 3, 16, 6, 9, 15, 4, 12]
-	# ydata2 = list(loggeobrown(10))
-
-	kwargs1 = {'color': 'blue'}
-	# kwargs2 = {'color': 'red'}
+from nvd3 import lineChart
+@flapp.route('/chart/weekly/sensor/<int:sensor_id>')
+def sensor_weekly_chart(sensor_id):
+	end_datetime = datetime.utcnow()
+	start_datetime = end_datetime - timedelta(days = 7)
+	sensor = Sensor.query.filter_by(id = sensor_id).first()
+	if not sensor: 
+		return "sensor {} not found".format(sensor_id)
+	
+	xdata, ydata = get_sensor_period_data(sensor_id, start_datetime, end_datetime)
+	chart = lineChart(name="sensor {} weekly".format(sensor_id), x_is_date=True, x_axis_format="%b %d %a", **get_chart_settings())
 	extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
-	chart.add_serie(y=ydata, x=xdata, name='water level', extra=extra_serie, **kwargs1)
-	# extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"},
-	#                "date_format": "%d %b %Y %H:%M:%S %p"}
-	# extra_serie = {"tooltip": {"y_start": "", "y_end": " min"}}
-	# chart.add_serie(y=ydata2, x=xdata, name='cose', extra=extra_serie, **kwargs2)
+	chart.add_serie(y=ydata, x=xdata, name=sensor.alias, extra=extra_serie)
 	chart.buildhtml()
- 	return chart.htmlcontent
-
+	return chart.htmlcontent
 
 @flapp.route('/chart/daily/sensor/<int:sensor_id>')
-def daily_chart(sensor_id):
-
-	from nvd3 import lineChart
-	import random
-	import datetime
-	import time
-
-	charttype = "lineWithFocusChart"
-	start_time = int(time.mktime(datetime.datetime(2012, 6, 1).timetuple()) * 1000)
-	nb_element = 100
-
-	chart = lineChart(name=charttype, height=550, width=850,
-	                           color_category='category20b', x_is_date=True,
-	                           x_axis_format="%d %b %Y %H")
-
-	# Open File for test
-	# ---------------------------------------
-	chart.set_containerheader("\n\n<h2>" + charttype + "</h2>\n\n")
-
-	xdata = list(range(nb_element))
-	xdata = [start_time + x * 1000000000 for x in xdata]
+def sensor_daily_chart(sensor_id):
+	end_datetime = datetime.utcnow()
+	start_datetime = end_datetime - timedelta(days = 1)
+	sensor = Sensor.query.filter_by(id = sensor_id).first()
+	if not sensor: 
+		return "sensor {} not found".format(sensor_id)
+	
+	xdata, ydata = get_sensor_period_data(sensor_id, start_datetime, end_datetime)
 	print xdata
-	ydata = [i + random.randint(-10, 10) for i in range(nb_element)]
-
-
-	extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"},
-	               "date_format": "%d %b %Y %H:%M:%S %p"}
-	# extra_serie = None
-	chart.add_serie(name="serie 1", y=ydata, x=xdata, extra=extra_serie)
-	# chart.add_serie(name="serie 2", y=ydata2, x=xdata, extra=extra_serie)
-	# chart.add_serie(name="serie 3", y=ydata3, x=xdata, extra=extra_serie)
-	# chart.add_serie(name="serie 4", y=ydata4, x=xdata, extra=extra_serie)
-
+	chart = lineChart(name="sensor {} daily".format(sensor_id), x_is_date=False, x_axis_format="AM_PM", **get_chart_settings())
+	extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
+	chart.add_serie(y=ydata, x=xdata, name=sensor.alias, extra=extra_serie)
 	chart.buildhtml()
-
 	return chart.htmlcontent
 
 
+@flapp.route('/chart/weekly/node/<int:node_id>')
+def node_weekly_chart(node_id):
+	end_datetime = datetime.utcnow()
+	start_datetime = end_datetime - timedelta(days = 7)
+	node = Node.query.filter_by(id = node_id).first()
+	if not node: return "node {} not found".format(node_id)
+	chart_settings = get_chart_settings()
+	chart = lineChart(name="node {} weekly".format(node_id), x_is_date=True, x_axis_format="%b %d %a", **chart_settings)
+	for sensor in node.sensors:
+		xdata, ydata = get_sensor_period_data(sensor.id, start_datetime, end_datetime)
+		extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
+		chart.add_serie(y=ydata, x=xdata, name=sensor.alias, extra=extra_serie)
+	chart.buildhtml()
+	return chart.htmlcontent
 
 
-# def loggeobrown(datapoints = 100):
-# 	import math
-# 	import random
-# 	series = []
-# 	p = 1
-# 	dt = 1
-# 	mu = 0
-# 	sigma = 1
-# 	for k in range(datapoints):
-# 		p *= math.exp((mu - sigma * sigma // 2) * dt +sigma * random.normalvariate(0, dt * dt))
-# 		series.append(math.log(p))
-# 	return series
 
 import itertools
 import math
@@ -667,6 +604,50 @@ class TestResources:
 
 	def test_readinglist_get(self):
 		pass
+
+
+from flask import render_template, Markup
+
+import uuid
+class NodeMarker(object):
+	def __init__(self, longitude, latitude, icon_url = None, infowindow = None, click_redirect = "http://techrice.jp"):
+		assert isinstance(longitude, float), 'longitude must be a float'
+		assert isinstance(latitude, float), 'latitude must be a float'
+		self.longitude = longitude
+		self.latitude = latitude
+		
+		print infowindow
+		print type(infowindow)
+		# assert isinstance(infowindow, str), 'infowindow must be a string'
+		self.infowindow = Markup(infowindow)
+		self.uuid = uuid.uuid4().hex
+
+		assert click_redirect, 'click_redirect must be a url'
+		self.click_redirect = click_redirect
+
+	def __repr__(self):
+		return str(self.__dict__)
+
+
+@flapp.route("/map/nodes")
+def nodes_map():
+	nodes = Node.query.filter((Node.longitude != None) & (Node.latitude != None)).all()
+	return make_map(nodes)
+
+@flapp.route("/map/site/<int:site_id>")
+def site_map(site_id):
+	nodes = Node.query.filter((Node.site_id == site_id) & (Node.longitude != None) & (Node.latitude != None)).all()
+	return make_map(nodes)
+
+
+def make_map(nodes):
+	markers = [NodeMarker(
+		longitude = node.longitude, 
+		latitude = node.latitude, 
+		infowindow = node.alias, 
+		click_redirect = 'http://localhost:8080/chart/weekly/node/{}'.format(node.id)
+		) for node in nodes]
+	return Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
 
 
 
