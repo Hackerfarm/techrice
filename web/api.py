@@ -19,10 +19,11 @@ dburi = 'postgresql://halfdan@localhost:5432/techrice'
 Base = declarative_base()
 engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
 session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+session._model_changes = {}
 Base.query = session.query_property()
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Table, Boolean
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import object_mapper, class_mapper, relationship, backref
 from collections import Iterable
@@ -32,7 +33,7 @@ from datetime import datetime, timedelta
 
 
 
-class SatoyamaBase(object):
+class ExtendedBase(object):
 
 	created = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
 	updated = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -86,12 +87,12 @@ class SatoyamaBase(object):
 		return str(self.json())
 
 
-@sqlalchemy.event.listens_for(SatoyamaBase, 'before_update', propagate=True)
+@sqlalchemy.event.listens_for(ExtendedBase, 'before_update', propagate=True)
 def timestamp_before_update(mapper, connection, target):
     target.updated = datetime.utcnow()
 
 
-class Site(SatoyamaBase, Base):
+class Site(ExtendedBase, Base):
 
 	__tablename__ = 'sites'
 
@@ -110,7 +111,7 @@ class Site(SatoyamaBase, Base):
 		return {'alias': self.alias, 'id': self.id, 'nodes': map(lambda n: n.id, self.nodes)}
 
 
-class Node(SatoyamaBase, Base):
+class Node(ExtendedBase, Base):
 	
 	__tablename__ = 'nodes'
 	
@@ -143,7 +144,7 @@ class Node(SatoyamaBase, Base):
 		return {'alias': self.alias, 'id': self.id, 'longitude': self.longitude, 'latitude': self.latitude, 'site_id': self.site_id, 'sensors': map(lambda s: s.id, self.sensors)}
 
 
-class NodeType(SatoyamaBase, Base):
+class NodeType(ExtendedBase, Base):
 	__tablename__ = 'nodetypes'
 	id = Column(Integer(), primary_key = True)
 	name = Column(String(), unique = True)
@@ -156,13 +157,13 @@ class NodeType(SatoyamaBase, Base):
 	def json(self):
 		return {'id': self.id, 'name': self.name, 'nodes': map(lambda n: n.id, self.nodes)}
 
-# class Unit(SatoyamaBase, Base):
+# class Unit(ExtendedBase, Base):
 # 	__tablename__ = 'units'
 
 # 	id = Column(Integer, primary_key = True)
 
 
-class SensorType(SatoyamaBase, Base):
+class SensorType(ExtendedBase, Base):
 	__tablename__ = 'sensortypes'
 
 	id = Column( Integer, primary_key = True)
@@ -179,7 +180,7 @@ class SensorType(SatoyamaBase, Base):
 		return {'id': self.id, 'name': self.name, 'unit': self.unit, 'sensors': map(lambda s: s.id, self.sensors)}
 
 
-class Sensor(SatoyamaBase, Base):
+class Sensor(ExtendedBase, Base):
 	__tablename__ = 'sensors'
 	
 	id = Column( Integer, primary_key = True )
@@ -202,7 +203,7 @@ class Sensor(SatoyamaBase, Base):
 	
 
 
-class Reading(SatoyamaBase, Base):
+class Reading(ExtendedBase, Base):
 	__tablename__ = 'readings'
 
 	id = Column( Integer, primary_key = True )
@@ -221,6 +222,155 @@ class Reading(SatoyamaBase, Base):
 	def json(self):
 		return {'id': self.id, 'sensor_id': self.sensor_id, 'value': self.value, 'timestamp': str(self.timestamp), 'created': str(self.created), 'updated': str(self.updated)}
 
+
+
+
+
+
+
+
+
+
+# A base model for other database tables to inherit
+
+from flask_security import RoleMixin, UserMixin
+from flask.ext.sqlalchemy import SQLAlchemy
+from flask_security.datastore import SQLAlchemyUserDatastore
+from flask_security import Security
+# db = SQLAlchem1y(flapp)
+
+
+# roles_users = db.Table('roles_users',
+#                        db.Column('user_id', db.Integer(),
+#                                  db.ForeignKey('auth_user.id')),
+#                        db.Column('role_id', db.Integer(),
+#                                  db.ForeignKey('auth_role.id')))
+
+
+# class Role(Base, RoleMixin):
+#     __tablename__ = 'auth_role'
+#     name = db.Column(db.String(80), nullable=False, unique=True)
+#     description = db.Column(db.String(255))
+
+#     def __init__(self, name):
+#         self.name = name
+
+#     def __repr__(self):
+#         return '<Role %r>' % self.name
+
+
+# class User(Base, UserMixin):
+#     __tablename__ = 'auth_user'
+#     email = db.Column(db.String(255), nullable=False, unique=True)
+#     password = db.Column(db.String(255), nullable=False)
+#     first_name = db.Column(db.String(255))
+#     last_name = db.Column(db.String(255))
+#     active = db.Column(db.Boolean())
+#     confirmed_at = db.Column(db.DateTime())
+#     last_login_at = db.Column(db.DateTime())
+#     current_login_at = db.Column(db.DateTime())
+#     # Why 45 characters for IP Address ?
+#     # See http://stackoverflow.com/questions/166132/maximum-length-of-the-textual-representation-of-an-ipv6-address/166157#166157
+#     last_login_ip = db.Column(db.String(45))
+#     current_login_ip = db.Column(db.String(45))
+#     login_count = db.Column(db.Integer)
+#     roles = db.relationship('Role', secondary=roles_users,
+#                             backref=db.backref('users', lazy='dynamic'))
+
+#     def __repr__(self):
+#         return '<User %r>' % self.email
+
+
+# # Setup Flask-Security
+# user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+# security = Security(app, user_datastore)
+
+
+roles_users = Table('roles_users', Base.metadata,
+	Column('user_id', Integer(), ForeignKey('users.id')),
+	Column('role_id', Integer(), ForeignKey('roles.id'))
+	)
+
+class Role(Base, RoleMixin):
+	__tablename__ = 'roles'
+	id = Column(Integer(), primary_key = True)
+	name = Column(String(100), nullable = False, unique = True)
+	description = Column(String(255))
+	# users = db.relationship('User', secondary=roles_users, backref=db.backref('roles', lazy='dynamic'))
+
+
+class User(Base, UserMixin):
+	__tablename__ = 'users'
+	id = Column(Integer(), primary_key = True)
+	email = Column(String(255), unique=True)
+	password = Column(String(255))
+	active = Column(Boolean())
+	confirmed_at = Column(DateTime())
+	roles = relationship('Role', secondary=roles_users,backref=backref('users', lazy='dynamic'))
+    # roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
+    # logins = relationship('Login', backref = backref('login'))
+
+# class Login(Base):
+# 	__tablename__ = 'logins'
+# 	id = Column(Integer(), primary_key = True)
+# 	users = Column(Integer, ForeignKey('users.id'))
+
+	# sensors = relationship('Sensor', backref = backref('sensortype'))
+
+# Setup Flask-Security
+user_datastore = SQLAlchemyUserDatastore(User, Role)
+security = Security(flapp, user_datastore)
+
+from flask_security import auth_token_required, http_auth_required
+from flask import jsonify
+
+
+# @auth_token_required
+@flapp.route('/authtest/', methods=['GET'])
+@http_auth_required
+def dummyAPI():
+    ret_dict = {
+        "Key1": "Value1",
+        "Key2": "value2"
+    }
+    return jsonify(items=ret_dict)
+
+@flapp.before_first_request
+def create_user():
+    # create_all()
+    if not User.query.first():
+        user_datastore.create_user(email='test@example.com', password='humle')
+        session.commit()
+
+#     email = db.Column(db.String(255), nullable=False, unique=True)
+#     password = db.Column(db.String(255), nullable=False)
+#     first_name = db.Column(db.String(255))
+#     last_name = db.Column(db.String(255))
+#     active = db.Column(db.Boolean())
+#     confirmed_at = db.Column(db.DateTime())
+#     last_login_at = db.Column(db.DateTime())
+#     current_login_at = db.Column(db.DateTime())
+#     # Why 45 characters for IP Address ?
+#     # See http://stackoverflow.com/questions/166132/maximum-length-of-the-textual-representation-of-an-ipv6-address/166157#166157
+#     last_login_ip = db.Column(db.String(45))
+#     current_login_ip = db.Column(db.String(45))
+#     login_count = db.Column(db.Integer)
+#     roles = db.relationship('Role', secondary=roles_users,
+#                             backref=db.backref('users', lazy='dynamic'))
+
+#     def __repr__(self):
+#         return '<User %r>' % self.email
+
+
+
+
+# # Create a user to test with
+# @app.before_first_request
+# def create_user():
+#     db.create_all()
+#     if not User.query.first():
+#         user_datastore.create_user(email='test@example.com', password='test123')
+#         db.session.commit()
 
 
 
@@ -606,6 +756,9 @@ class TestResources:
 		pass
 
 
+
+
+
 from flask import render_template, Markup
 
 import uuid
@@ -647,6 +800,7 @@ def make_map(nodes):
 		infowindow = node.alias, 
 		click_redirect = 'http://localhost:8080/chart/weekly/node/{}'.format(node.id)
 		) for node in nodes]
+	print Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
 	return Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
 
 
