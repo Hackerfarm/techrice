@@ -17,7 +17,7 @@ rest_api = restful.Api(flapp)
 dburi = 'postgresql://halfdan@localhost:5432/techrice'
 
 #Base = declarative_base()
-#engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
+# engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
 #session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 #Base.query = session.query_property()
@@ -32,10 +32,15 @@ dburi = 'postgresql://halfdan@localhost:5432/techrice'
 
 from flask import Flask, render_template
 from flask.ext.sqlalchemy import SQLAlchemy, event
+
+flapp.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://halfdan:halfdan@localhost/techrice'
+
 db = SQLAlchemy(flapp)
 
 
 from datetime import datetime, timedelta
+
+
 
 
 
@@ -636,7 +641,7 @@ def make_map(nodes):
 
 
 if __name__ == '__main__':
-	Base.metadata.create_all(bind=engine)
+	
 	# FakeSensor(1, 1).start()
 	flapp.run(port = 8080, debug = True)
 
