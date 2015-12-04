@@ -231,146 +231,113 @@ class Reading(ExtendedBase, Base):
 
 
 
-# A base model for other database tables to inherit
-
-from flask_security import RoleMixin, UserMixin
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask_security.datastore import SQLAlchemyUserDatastore
-from flask_security import Security
-# db = SQLAlchem1y(flapp)
+# from flask_security import RoleMixin, UserMixin
+# from flask.ext.sqlalchemy import SQLAlchemy
+# from flask_security.datastore import UserDatastore
+# from flask_security import Security
 
 
-# roles_users = db.Table('roles_users',
-#                        db.Column('user_id', db.Integer(),
-#                                  db.ForeignKey('auth_user.id')),
-#                        db.Column('role_id', db.Integer(),
-#                                  db.ForeignKey('auth_role.id')))
-
+# roles_users = Table('roles_users', Base.metadata,
+# 	Column('user_id', Integer(), ForeignKey('users.id')),
+# 	Column('role_id', Integer(), ForeignKey('roles.id'))
+# 	)
 
 # class Role(Base, RoleMixin):
-#     __tablename__ = 'auth_role'
-#     name = db.Column(db.String(80), nullable=False, unique=True)
-#     description = db.Column(db.String(255))
-
-#     def __init__(self, name):
-#         self.name = name
-
-#     def __repr__(self):
-#         return '<Role %r>' % self.name
-
+# 	__tablename__ = 'roles'
+# 	id = Column(Integer(), primary_key = True)
+# 	name = Column(String(100), nullable = False, unique = True)
+# 	description = Column(String(255))
 
 # class User(Base, UserMixin):
-#     __tablename__ = 'auth_user'
-#     email = db.Column(db.String(255), nullable=False, unique=True)
-#     password = db.Column(db.String(255), nullable=False)
-#     first_name = db.Column(db.String(255))
-#     last_name = db.Column(db.String(255))
-#     active = db.Column(db.Boolean())
-#     confirmed_at = db.Column(db.DateTime())
-#     last_login_at = db.Column(db.DateTime())
-#     current_login_at = db.Column(db.DateTime())
-#     # Why 45 characters for IP Address ?
-#     # See http://stackoverflow.com/questions/166132/maximum-length-of-the-textual-representation-of-an-ipv6-address/166157#166157
-#     last_login_ip = db.Column(db.String(45))
-#     current_login_ip = db.Column(db.String(45))
-#     login_count = db.Column(db.Integer)
-#     roles = db.relationship('Role', secondary=roles_users,
-#                             backref=db.backref('users', lazy='dynamic'))
-
-#     def __repr__(self):
-#         return '<User %r>' % self.email
-
+# 	__tablename__ = 'users'
+# 	id = Column(Integer(), primary_key = True)
+# 	email = Column(String(255), unique=True)
+# 	password = Column(String(255))
+# 	active = Column(Boolean())
+# 	confirmed_at = Column(DateTime())
 
 # # Setup Flask-Security
-# user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-# security = Security(app, user_datastore)
+# user_datastore = UserDatastore(User, Role)
+# security = Security(flapp, user_datastore)
+
+# from flask_security import auth_token_required, http_auth_required
+# from flask import jsonify
 
 
-roles_users = Table('roles_users', Base.metadata,
-	Column('user_id', Integer(), ForeignKey('users.id')),
-	Column('role_id', Integer(), ForeignKey('roles.id'))
-	)
+# # @auth_token_required
+# @flapp.route('/authtest/', methods=['GET'])
+# @http_auth_required
+# def dummyAPI():
+#     ret_dict = {
+#         "Key1": "Value1",
+#         "Key2": "value2"
+#     }
+#     return jsonify(items=ret_dict)
 
-class Role(Base, RoleMixin):
-	__tablename__ = 'roles'
-	id = Column(Integer(), primary_key = True)
-	name = Column(String(100), nullable = False, unique = True)
-	description = Column(String(255))
-	# users = db.relationship('User', secondary=roles_users, backref=db.backref('roles', lazy='dynamic'))
+# @flapp.before_first_request
+# def create_user():
+#     # create_all()
+#     if not User.query.first():
+#         user_datastore.create_user(email='test@example.com', password='humle')
+#         session.commit()
 
 
-class User(Base, UserMixin):
-	__tablename__ = 'users'
-	id = Column(Integer(), primary_key = True)
-	email = Column(String(255), unique=True)
-	password = Column(String(255))
-	active = Column(Boolean())
-	confirmed_at = Column(DateTime())
-	roles = relationship('Role', secondary=roles_users,backref=backref('users', lazy='dynamic'))
-    # roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
-    # logins = relationship('Login', backref = backref('login'))
 
-# class Login(Base):
-# 	__tablename__ = 'logins'
-# 	id = Column(Integer(), primary_key = True)
-# 	users = Column(Integer, ForeignKey('users.id'))
+from flask import Flask, render_template
+from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.security import Security, SQLAlchemyUserDatastore, \
+    UserMixin, RoleMixin, login_required
 
-	# sensors = relationship('Sensor', backref = backref('sensortype'))
+# Create app
+# app = Flask(__name__)
+flapp.config['DEBUG'] = True
+flapp.config['SECRET_KEY'] = 'super-secret'
+flapp.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+
+# Create database connection object
+db = SQLAlchemy(flapp)
+
+# Define models
+roles_users = db.Table('roles_users',
+        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(255))
+    active = db.Column(db.Boolean())
+    confirmed_at = db.Column(db.DateTime())
+    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
 
 # Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(User, Role)
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(flapp, user_datastore)
 
-from flask_security import auth_token_required, http_auth_required
-from flask import jsonify
-
-
-# @auth_token_required
-@flapp.route('/authtest/', methods=['GET'])
-@http_auth_required
-def dummyAPI():
-    ret_dict = {
-        "Key1": "Value1",
-        "Key2": "value2"
-    }
-    return jsonify(items=ret_dict)
-
+# Create a user to test with
 @flapp.before_first_request
 def create_user():
-    # create_all()
-    if not User.query.first():
-        user_datastore.create_user(email='test@example.com', password='humle')
-        session.commit()
+    db.create_all()
+    user_datastore.create_user(email='matt@nobien.net', pasœsword='password')
+    db.session.commit()
 
-#     email = db.Column(db.String(255), nullable=False, unique=True)
-#     password = db.Column(db.String(255), nullable=False)
-#     first_name = db.Column(db.String(255))
-#     last_name = db.Column(db.String(255))
-#     active = db.Column(db.Boolean())
-#     confirmed_at = db.Column(db.DateTime())
-#     last_login_at = db.Column(db.DateTime())
-#     current_login_at = db.Column(db.DateTime())
-#     # Why 45 characters for IP Address ?
-#     # See http://stackoverflow.com/questions/166132/maximum-length-of-the-textual-representation-of-an-ipv6-address/166157#166157
-#     last_login_ip = db.Column(db.String(45))
-#     current_login_ip = db.Column(db.String(45))
-#     login_count = db.Column(db.Integer)
-#     roles = db.relationship('Role', secondary=roles_users,
-#                             backref=db.backref('users', lazy='dynamic'))
-
-#     def __repr__(self):
-#         return '<User %r>' % self.email
+# Views
+@flapp.route('/')
+@login_required
+def home():
+    return render_template('index.html')
 
 
 
 
-# # Create a user to test with
-# @app.before_first_request
-# def create_user():
-#     db.create_all()
-#     if not User.query.first():
-#         user_datastore.create_user(email='test@example.com', password='test123')
-#         db.session.commit()
+
+
+
 
 
 
