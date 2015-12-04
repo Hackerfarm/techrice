@@ -108,13 +108,6 @@ class Site(ExtendedBase, db.Model):
 	alias = db.Column(db.String(100) )
 	nodes = db.relationship('Node', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('site', single_parent = True))
 
-	# def __init__(self, alias = None, nodes = []):
-	# 	self.alias = alias
-	# 	assert isinstance(nodes, Iterable), 'nodes must be iterable'
-	# 	for node in nodes:
-	# 		assert isinstance(node, Node), 'Each item in nodes must be an instance of type Node'
-	# 		self.nodes.append(node)
-
 	def json(self):
 		return {'alias': self.alias, 'id': self.id, 'nodes': map(lambda n: n.id, self.nodes)}
 
@@ -133,22 +126,6 @@ class Node(ExtendedBase, db.Model):
 	site_id = db.Column(db.Integer, db.ForeignKey('sites.id', ondelete = 'SET NULL') )
 	sensors = db.relationship('Sensor', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('node'))
 
-	# def __init__(self, node_type = None, site = None, alias = None, sensors = [], longitude = None, latitude = None, **kwargs):
-	# 	assert isinstance(sensors, Iterable), 'sensors must be iterable'
-	# 	for sensor in sensors:
-	# 		assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
-	# 		self.sensors.append(sensor)
-
-	# 	self.longitude = longitude
-	# 	self.latitude = latitude
-	# 	self.alias = alias
-	# 	self.nodetype = node_type
-
-	# 	if site: 
-	# 		assert isinstance(site, Site), 'site must be an instance of %s'%type(Site)
-	# 		self.site = site
-
-
 	def json(self):
 		return {'alias': self.alias, 'id': self.id, 'longitude': self.longitude, 'latitude': self.latitude, 'site_id': self.site_id, 'sensors': map(lambda s: s.id, self.sensors)}
 
@@ -161,18 +138,9 @@ class NodeType(ExtendedBase, db.Model):
 	id = db.Column(db.Integer(), primary_key = True)
 	name = db.Column(db.String(), unique = True)
 	nodes = db.relationship( 'Node', backref = db.backref('nodetype'))
-	# sensortypes = relationship('SensorType', backref = backref('sensors'))
-
-	# def __init__(self, name):
-	# 	self.name = name
 
 	def json(self):
 		return {'id': self.id, 'name': self.name, 'nodes': map(lambda n: n.id, self.nodes)}
-
-# # class Unit(ExtendedBase, Base):
-# # 	__tablename__ = 'units'
-
-# # 	id = Column(Integer, primary_key = True)
 
 
 class SensorType(ExtendedBase, db.Model):
