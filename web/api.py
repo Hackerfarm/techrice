@@ -10,23 +10,29 @@ rest_api = restful.Api(flapp)
 # limiter = Limiter(flapp, global_limits=["30 per minute"])
 
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+# from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy import create_engine
+# from sqlalchemy.orm import scoped_session, sessionmaker
 
 dburi = 'postgresql://halfdan@localhost:5432/techrice'
 
-Base = declarative_base()
-engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
-session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-session._model_changes = {}
-Base.query = session.query_property()
+#Base = declarative_base()
+#engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
+#session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
-import sqlalchemy
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Table, Boolean
-from sqlalchemy.exc import DataError
-from sqlalchemy.orm import object_mapper, class_mapper, relationship, backref
-from collections import Iterable
+#Base.query = session.query_property()
+
+
+
+# import sqlalchemy
+# from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Table, Boolean
+# from sqlalchemy.exc import DataError
+# from sqlalchemy.orm import object_mapper, class_mapper, relationship, backref
+# from collections import Iterable
+
+from flask import Flask, render_template
+from flask.ext.sqlalchemy import SQLAlchemy, event
+db = SQLAlchemy(flapp)
 
 
 from datetime import datetime, timedelta
@@ -35,8 +41,8 @@ from datetime import datetime, timedelta
 
 class ExtendedBase(object):
 
-	created = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
-	updated = sqlalchemy.Column(DateTime, default=datetime.utcnow, nullable=False)
+	created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+	updated = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
 	def json(self):
@@ -57,8 +63,8 @@ class ExtendedBase(object):
 	@classmethod
 	def create(cls, *args, **kwargs):
 		instance = cls(*args, **kwargs)
-		session.add(instance)
-		session.commit()
+		db.session.add(instance)
+		db.session.commit()
 		return instance
 
 	@classmethod
@@ -86,116 +92,111 @@ class ExtendedBase(object):
 	def __repr__(self):
 		return str(self.json())
 
+import sqlalchemy
+from collections import Iterable
 
-@sqlalchemy.event.listens_for(ExtendedBase, 'before_update', propagate=True)
+@event.listens_for(ExtendedBase, 'before_update', propagate=True)
 def timestamp_before_update(mapper, connection, target):
     target.updated = datetime.utcnow()
 
 
-class Site(ExtendedBase, Base):
+class Site(ExtendedBase, db.Model):
 
 	__tablename__ = 'sites'
 
-	id = Column( Integer, primary_key = True)
-	alias = Column( String(100) )
-	nodes = relationship('Node', cascade='all,delete-orphan', passive_deletes=True, backref = backref('site', single_parent = True))
+	id = db.Column(db.Integer, primary_key = True)
+	alias = db.Column(db.String(100) )
+	nodes = db.relationship('Node', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('site', single_parent = True))
 
-	def __init__(self, alias = None, nodes = []):
-		self.alias = alias
-		assert isinstance(nodes, Iterable), 'nodes must be iterable'
-		for node in nodes:
-			assert isinstance(node, Node), 'Each item in nodes must be an instance of type Node'
-			self.nodes.append(node)
+	# def __init__(self, alias = None, nodes = []):
+	# 	self.alias = alias
+	# 	assert isinstance(nodes, Iterable), 'nodes must be iterable'
+	# 	for node in nodes:
+	# 		assert isinstance(node, Node), 'Each item in nodes must be an instance of type Node'
+	# 		self.nodes.append(node)
 
 	def json(self):
 		return {'alias': self.alias, 'id': self.id, 'nodes': map(lambda n: n.id, self.nodes)}
 
 
-class Node(ExtendedBase, Base):
+
+class Node(ExtendedBase, db.Model):
 	
 	__tablename__ = 'nodes'
 	
-	id = Column( Integer, primary_key = True )
-	alias = Column( String(100) )
-	longitude = Column( Float()) 
-	latitude = Column( Float())
+	id = db.Column(db.Integer, primary_key = True )
+	alias = db.Column(db.String(100))
+	longitude = db.Column(db.Float()) 
+	latitude = db.Column(db.Float())
 	
-	nodetype_id = Column( Integer, ForeignKey('nodetypes.id', ondelete = 'SET NULL') )
-	site_id = Column( Integer, ForeignKey('sites.id', ondelete = 'SET NULL') )
-	sensors = relationship('Sensor', cascade='all,delete-orphan', passive_deletes=True, backref = backref('node'))
+	nodetype_id = db.Column(db.Integer, db.ForeignKey('nodetypes.id', ondelete = 'SET NULL') )
+	site_id = db.Column(db.Integer, db.ForeignKey('sites.id', ondelete = 'SET NULL') )
+	sensors = db.relationship('Sensor', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('node'))
 
-	def __init__(self, node_type = None, site = None, alias = None, sensors = [], longitude = None, latitude = None, **kwargs):
-		assert isinstance(sensors, Iterable), 'sensors must be iterable'
-		for sensor in sensors:
-			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
-			self.sensors.append(sensor)
+	# def __init__(self, node_type = None, site = None, alias = None, sensors = [], longitude = None, latitude = None, **kwargs):
+	# 	assert isinstance(sensors, Iterable), 'sensors must be iterable'
+	# 	for sensor in sensors:
+	# 		assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
+	# 		self.sensors.append(sensor)
 
-		self.longitude = longitude
-		self.latitude = latitude
-		self.alias = alias
-		self.nodetype = node_type
+	# 	self.longitude = longitude
+	# 	self.latitude = latitude
+	# 	self.alias = alias
+	# 	self.nodetype = node_type
 
-		if site: 
-			assert isinstance(site, Site), 'site must be an instance of %s'%type(Site)
-			self.site = site
+	# 	if site: 
+	# 		assert isinstance(site, Site), 'site must be an instance of %s'%type(Site)
+	# 		self.site = site
 
 
 	def json(self):
 		return {'alias': self.alias, 'id': self.id, 'longitude': self.longitude, 'latitude': self.latitude, 'site_id': self.site_id, 'sensors': map(lambda s: s.id, self.sensors)}
 
 
-class NodeType(ExtendedBase, Base):
+
+
+
+class NodeType(ExtendedBase, db.Model):
 	__tablename__ = 'nodetypes'
-	id = Column(Integer(), primary_key = True)
-	name = Column(String(), unique = True)
-	nodes = relationship( 'Node', backref = backref('nodetype'))
+	id = db.Column(db.Integer(), primary_key = True)
+	name = db.Column(db.String(), unique = True)
+	nodes = db.relationship( 'Node', backref = db.backref('nodetype'))
 	# sensortypes = relationship('SensorType', backref = backref('sensors'))
 
-	def __init__(self, name):
-		self.name = name
+	# def __init__(self, name):
+	# 	self.name = name
 
 	def json(self):
 		return {'id': self.id, 'name': self.name, 'nodes': map(lambda n: n.id, self.nodes)}
 
-# class Unit(ExtendedBase, Base):
-# 	__tablename__ = 'units'
+# # class Unit(ExtendedBase, Base):
+# # 	__tablename__ = 'units'
 
-# 	id = Column(Integer, primary_key = True)
+# # 	id = Column(Integer, primary_key = True)
 
 
-class SensorType(ExtendedBase, Base):
+class SensorType(ExtendedBase, db.Model):
 	__tablename__ = 'sensortypes'
 
-	id = Column( Integer, primary_key = True)
-	name = Column( String() )
-	unit = Column( String() )
+	id = db.Column(db.Integer, primary_key = True)
+	name = db.Column(db.String())
+	unit = db.Column(db.String())
 	
-	sensors = relationship('Sensor', backref = backref('sensortype'))
-
-	def __init__(self, name, unit, **kwwargs):
-		self.name = name
-		self.unit = unit
+	sensors = db.relationship('Sensor', backref = db.backref('sensortype'))
 
 	def json(self):
 		return {'id': self.id, 'name': self.name, 'unit': self.unit, 'sensors': map(lambda s: s.id, self.sensors)}
 
 
-class Sensor(ExtendedBase, Base):
+class Sensor(ExtendedBase, db.Model):
 	__tablename__ = 'sensors'
 	
-	id = Column( Integer, primary_key = True )
-	alias = Column( String() )
-	# latest_reading = Column( Integer, ForeignKey('readings.id'))
-	
-	readings = relationship('Reading', cascade='all,delete-orphan', passive_deletes=True, backref = backref('sensor', single_parent = True))
+	id = db.Column(db.Integer, primary_key = True )
+	alias = db.Column(db.String())
+	readings = db.relationship('Reading', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('sensor', single_parent = True))
 
-	node_id = Column( Integer, ForeignKey('nodes.id', ondelete = 'CASCADE') )
-	sensortype_id = Column( Integer, ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
-
-	def __init__(self, node = None, sensortype = None, alias = None, readings = [], **kwargs):
-		self.sensortype = sensortype
-		self.node = node
-		self.alias = alias
+	node_id = db.Column(db.Integer, db.ForeignKey('nodes.id', ondelete = 'CASCADE') )
+	sensortype_id = db.Column(db.Integer, db.ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
 		
 	def json(self):
 		return {'id': self.id, 'alias': self.alias, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
@@ -203,13 +204,13 @@ class Sensor(ExtendedBase, Base):
 	
 
 
-class Reading(ExtendedBase, Base):
+class Reading(ExtendedBase, db.Model):
 	__tablename__ = 'readings'
 
-	id = Column( Integer, primary_key = True )
-	timestamp = Column( DateTime() )
-	value = Column( Float() )
-	sensor_id = Column( Integer, ForeignKey('sensors.id', ondelete = 'CASCADE') )
+	id = db.Column(db.Integer, primary_key = True )
+	timestamp = db.Column(db.DateTime())
+	value = db.Column(db.Float())
+	sensor_id = db.Column(db.Integer, db.ForeignKey('sensors.id', ondelete = 'CASCADE') )
 
 	def __init__(self, sensor, value, timestamp):
 		self.sensor = sensor
@@ -225,112 +226,6 @@ class Reading(ExtendedBase, Base):
 
 
 
-
-
-
-
-
-
-# from flask_security import RoleMixin, UserMixin
-# from flask.ext.sqlalchemy import SQLAlchemy
-# from flask_security.datastore import UserDatastore
-# from flask_security import Security
-
-
-# roles_users = Table('roles_users', Base.metadata,
-# 	Column('user_id', Integer(), ForeignKey('users.id')),
-# 	Column('role_id', Integer(), ForeignKey('roles.id'))
-# 	)
-
-# class Role(Base, RoleMixin):
-# 	__tablename__ = 'roles'
-# 	id = Column(Integer(), primary_key = True)
-# 	name = Column(String(100), nullable = False, unique = True)
-# 	description = Column(String(255))
-
-# class User(Base, UserMixin):
-# 	__tablename__ = 'users'
-# 	id = Column(Integer(), primary_key = True)
-# 	email = Column(String(255), unique=True)
-# 	password = Column(String(255))
-# 	active = Column(Boolean())
-# 	confirmed_at = Column(DateTime())
-
-# # Setup Flask-Security
-# user_datastore = UserDatastore(User, Role)
-# security = Security(flapp, user_datastore)
-
-# from flask_security import auth_token_required, http_auth_required
-# from flask import jsonify
-
-
-# # @auth_token_required
-# @flapp.route('/authtest/', methods=['GET'])
-# @http_auth_required
-# def dummyAPI():
-#     ret_dict = {
-#         "Key1": "Value1",
-#         "Key2": "value2"
-#     }
-#     return jsonify(items=ret_dict)
-
-# @flapp.before_first_request
-# def create_user():
-#     # create_all()
-#     if not User.query.first():
-#         user_datastore.create_user(email='test@example.com', password='humle')
-#         session.commit()
-
-
-
-from flask import Flask, render_template
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.security import Security, SQLAlchemyUserDatastore, \
-    UserMixin, RoleMixin, login_required
-
-# Create app
-# app = Flask(__name__)
-flapp.config['DEBUG'] = True
-flapp.config['SECRET_KEY'] = 'super-secret'
-flapp.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-
-# Create database connection object
-db = SQLAlchemy(flapp)
-
-# Define models
-roles_users = db.Table('roles_users',
-        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
-
-class Role(db.Model, RoleMixin):
-    id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(80), unique=True)
-    description = db.Column(db.String(255))
-
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True)
-    password = db.Column(db.String(255))
-    active = db.Column(db.Boolean())
-    confirmed_at = db.Column(db.DateTime())
-    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
-
-# Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(flapp, user_datastore)
-
-# Create a user to test with
-@flapp.before_first_request
-def create_user():
-    db.create_all()
-    user_datastore.create_user(email='matt@nobien.net', pasœsword='password')
-    db.session.commit()
-
-# Views
-@flapp.route('/')
-@login_required
-def home():
-    return render_template('index.html')
 
 
 
