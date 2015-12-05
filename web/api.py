@@ -32,6 +32,7 @@ dburi = 'postgresql://halfdan@localhost:5432/techrice'
 
 from flask import Flask, render_template
 from flask.ext.sqlalchemy import SQLAlchemy, event
+from flask import jsonify
 
 flapp.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://halfdan:halfdan@localhost/techrice'
 flapp.config['SECRET_KEY'] = 'super-secret'
@@ -92,7 +93,7 @@ class ExtendedBase(object):
 	@classmethod
 	def delete(cls, id):
 		success = cls.query.filter_by(id = id).delete()
-		manager.session.commit()
+		db.session.commit()
 		return success
 
 	def __repr__(self):
@@ -175,8 +176,6 @@ class Sensor(ExtendedBase, db.Model):
 	def json(self):
 		return {'id': self.id, 'alias': self.alias, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
 
-	
-
 
 class Reading(ExtendedBase, db.Model):
 	__tablename__ = 'readings'
@@ -252,24 +251,40 @@ def home():
 from flask import request
 import ujson
 
+class ApiError(dict):
+	def __init__(self, message):
+		self['error'] = message	
+
+class ApiObjects(dict):
+	def __init__(self, objects = None):
+		self['objects'] = objects
+
 
 
 
 class SiteResource(restful.Resource):
 	def get(self, site_id = None):
 		site = Site.query.filter_by(id = site_id).first()
-		if site: return site.json()
+		if site: 
+			return jsonify(ApiObjects(site.json()))
+		else: 
+			return jsonify(ApiObjects())
 
 	def delete(self, site_id = None):
 		site = Site.query.filter_by(id = site_id).first()
 		if site: 
 			Site.delete(site.id)
-			return site.json()
+			return jsonify(ApiObjects(site.json()))
+		else:
+			return jsonify(ApiObjects())
 
 	def post(self):
 		alias = request.form.get('alias', None)
 		site = Site.create(alias = alias)
-		return site.json()
+		if site:
+			return jsonify(ApiObjects(site.json()))
+		else:
+			return jsonify(ApiObjects())
 
 rest_api.add_resource(SiteResource, '/site/<int:site_id>', '/site')
 
@@ -277,7 +292,10 @@ rest_api.add_resource(SiteResource, '/site/<int:site_id>', '/site')
 class SiteListResource(restful.Resource):
 	def get(self):
 		sites = Site.query.all()
-		return [site.json() for site in sites]
+		if sites: 
+			return jsonify(ApiObjects([site.json() for site in sites]))
+		else:
+			return jsonify(ApiObjects())
 		
 rest_api.add_resource(SiteListResource, '/sites')
 
@@ -287,13 +305,18 @@ class NodeResource(restful.Resource):
 	
 	def get(self, node_id = None):
 		node = Node.query.filter_by(id = node_id).first()
-		if node: return node.json()
+		if node: 
+			return jsonify(ApiObjects(node.json()))
+		else:
+			jsonify(ApiObjects())
 
 	def delete(self, node_id = None):
 		node = Node.query.filter_by(id = node_id).first()
 		if node: 
 			Node.delete(id = node.id)
-			return node.json()
+			return jsonify(ApiObjects(node.json()))
+		else:
+			jsonify(ApiObjects())
 		
 	def post(self):
 		args = {}
@@ -305,19 +328,27 @@ class NodeResource(restful.Resource):
 		site_id = request.form.get('site_id', None)
 		if site_id: 
 			site = Site.query.filter_by(id = site_id).first()
-			if site: args.update({'site' : site})
-			else: return 'site {} not found'.format(site_id)
-		else: return 'missing site_id'
+			if site: 
+				args.update({'site' : site})
+			else: 
+				return jsonify(ApiError('site {} not found'.format(site_id)))
+		else: 
+			return jsonify(ApiError('missing query arg: site_id'))
 
 		nodetype_id = request.form.get('nodetype_id', None)
 		if nodetype_id: 
 			nodetype = NodeType.query.filter_by(id = nodetype_id).first()
-			if nodetype: args.update({'nodetype' : nodetype}) 
-			else: return 'nodetype {} not found'.format(nodetype_id)
-		else: return 'missing nodetype_id'
+			if nodetype: 
+				args.update({'nodetype' : nodetype}) 
+			else: 
+				return jsonify(ApiError('nodetype {} not found'.format(nodetype_id)))
+		else: return jsonify(ApiError('missing query arg: nodetype_id'))
 		
 		node = Node.create(**args)
-		return node.json()		
+		if node:
+			return jsonify(ApiObjects(node.json()))
+		else:
+			return jsonify(ApiObjects())
 
 rest_api.add_resource(NodeResource, '/node/<int:node_id>', '/node')
 
@@ -325,8 +356,13 @@ rest_api.add_resource(NodeResource, '/node/<int:node_id>', '/node')
 class NodeListResource(restful.Resource):
 	def get(self):		
 		site_id = request.args.get('site_id')
+		if not site_id:
+			return jsonify(Error('missing query arg: site_id'))
 		nodes = Node.query.filter(Node.site_id == site_id).all()
-		return [node.json() for node in nodes]
+		if nodes:
+			return jsonify({'objects': [node.json() for node in nodes]})
+		else:
+			return jsonify(ApiObjects())
 
 rest_api.add_resource(NodeListResource, '/nodes', '/node/all')
 
@@ -340,13 +376,17 @@ class SensorResource(restful.Resource):
 	def get(self, sensor_id = None):
 		sensor = Sensor.query.filter_by(id = sensor_id).first()
 		if sensor:
-			return sensor.json()
+			return jsonify(ApiObjects(sensor.json()))
+		else:
+			return jsonify(ApiObjects())
 
 	def delete(self, sensor_id = None):
 		sensor = Sensor.query.filter_by(id = sensor_id).first()
 		if sensor:
 			Sensor.delete(id = sensor.id)
-			return sensor.json()
+			return jsonify(ApiObjects(sensor.json()))
+		else:
+			return jsonify(ApiObjects())
 
 	def post(self):
 		args = {}
@@ -354,20 +394,30 @@ class SensorResource(restful.Resource):
 		node_id = request.form.get('node_id')
 		if node_id: 
 			node = Node.query.filter_by(id = node_id).first()
-			if node: args.update({'node' : node})
-			else: return 'node {} not found'.format(node_id)
-		else: return 'missing node_id'
+			if node: 
+				args.update({'node' : node})
+			else: 
+				return jsonify(ApiError('node {} not found'.format(node_id)))
+		else: 
+			return jsonify(ApiError('missing node_id'))
 
 		sensortype_id = request.form.get('sensortype_id')
 		if sensortype_id: 
 			sensortype = SensorType.query.filter_by(id = sensortype_id).first()
-			if sensortype: args.update({'sensortype' : sensortype})
-			else: return 'sensortype {} not found'.format(sensortype_id)
-		else: return 'missing sensortype_id'
+			if sensortype: 
+				args.update({'sensortype' : sensortype})
+			else: 
+				return jsonify(ApiError('sensortype {} not found'.format(sensortype_id)))
+		else: 
+			return jsonify(ApiError('missing sensortype_id'))
 
 		args.update({'alias': request.form.get('alias')})
 
-		Sensor.create(**args)
+		sensor = Sensor.create(**args)
+		if sensor:
+			return jsonify(ApiObjects(sensor.json()))
+		else:
+			return jsonify(ApiObjects())
 
 rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>')
 
@@ -376,7 +426,11 @@ class SensorListResource(restful.Resource):
 	def get(self):
 		node_id = request.args.get('node_id')
 		sensors = Sensor.query.filter(Sensor.node_id == node_id).all()
-		return [sensor.json() for sensor in sensors]
+		if sensors:
+			return jsonify(ApiObjects([sensor.json() for sensor in sensors]))
+		else: 
+			return jsonify(ApiObjects())
+
 
 rest_api.add_resource(SensorListResource, '/sensors')
 
@@ -385,26 +439,36 @@ class ReadingResource(restful.Resource):
 	def get(self, reading_id = None):
 		reading = Reading.query.filter_by(id = reading_id).first()
 		if reading:
-			return reading.json()
+			return jsonify(ApiObjects(reading.json()))
+		else:
+			return jsonify(ApiObjects())
 
 	def delete(self, reading_id = None):
 		reading = Reading.query.filter_by(id = reading_id).first()
 		if reading:
 			reading.delete(id = reading.id)
-			return reading.json()
+			return jsonify(ApiObjects(reading.json()))
+		else:
+			return jsonify(ApiObjects())
 
 	def post(self):
 		sensor_id = request.form.get('sensor_id')
 		value = request.form.get('value')
 		timestamp = request.form.get('timestamp')
 		
-		if not value: return 'missing value'
-		if not timestamp: return 'missing timestamp'
-		if not sensor_id: return 'missing sensor_id'
+		if not value: 
+			return jsonify(ApiError('missing value'))
+		if not timestamp: 
+			return jsonify(ApiError('missing timestamp'))
+		if not sensor_id: 
+			return jsonify(ApiError('missing sensor_id'))
 		else:
 			sensor = Sensor.query.filter_by(id = sensor_id).first()
 			reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
-			return reading.json()
+			if reading:
+				return jsonify(ApiObjects(reading.json()))
+			else:
+				return jsonify(ApiObjects())
 
 
 rest_api.add_resource(ReadingResource, '/reading/<int:reading_id>', '/reading')
@@ -413,7 +477,10 @@ class ReadingListResource(restful.Resource):
 	def get(self):
 		sensor_id = request.args.get('sensor_id')
 		readings = Reading.query.filter(Reading.sensor_id == sensor_id).all()
-		return [reading.json() for reading in readings]
+		if readings:
+			return jsonify(ApiObjects([reading.json() for reading in readings]))
+		else:
+			return jsonify(ApiObjects())
 
 rest_api.add_resource(ReadingListResource, '/readings')
 
