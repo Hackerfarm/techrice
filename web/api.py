@@ -110,20 +110,27 @@ def timestamp_before_update(mapper, connection, target):
 class Site(ExtendedBase, db.Model):
 
 	__tablename__ = 'sites'
+	__resource_type__ = 'site'
 
 	id = db.Column(db.Integer, primary_key = True)
 	alias = db.Column(db.String(100) )
 	nodes = db.relationship('Node', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('site', single_parent = True))
 
 	def json(self):
-		return {'alias': self.alias, 'id': self.id, 'nodes': map(lambda n: n.id, self.nodes)}
+		return {'id': self.id, 
+				'alias': self.alias, 
+				'nodes': map(lambda n: n.id, self.nodes),
+				'type' : Site.__resource_type__,
+				'created':float(self.created.strftime("%s.%f")),
+				'updated':float(self.updated.strftime("%s.%f"))
+				}
 
 
 
 class Node(ExtendedBase, db.Model):
 	
 	__tablename__ = 'nodes'
-	
+	__resource_type__ = 'node'
 	id = db.Column(db.Integer, primary_key = True )
 	alias = db.Column(db.String(100))
 	longitude = db.Column(db.Float()) 
@@ -134,7 +141,17 @@ class Node(ExtendedBase, db.Model):
 	sensors = db.relationship('Sensor', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('node'))
 
 	def json(self):
-		return {'alias': self.alias, 'id': self.id, 'longitude': self.longitude, 'latitude': self.latitude, 'site_id': self.site_id, 'sensors': map(lambda s: s.id, self.sensors)}
+		return {'alias': self.alias, 
+				'id': self.id, 
+				'longitude': self.longitude, 
+				'latitude': self.latitude, 
+				'site_id': self.site_id, 
+				'sensors': map(lambda s: s.id, self.sensors),
+				'type': Node.__resource_type__,
+				'nodetype_id':self.nodetype_id,
+				'created':float(self.created.strftime("%s.%f")),
+				'updated':float(self.updated.strftime("%s.%f"))
+				}
 
 
 
@@ -611,12 +628,62 @@ def loggeobrowngen(n = -1, offset = 50):
 		yield math.log(p) + offset
 		
 
+import requests
+
+def assert_site_json(site_json):
+	try:
+		site = ujson.loads(site_json)
+	except:
+		assert False
+	assert site.has_key('id')
+	assert isinstance(site['id'], int)
+	assert site.has_key('alias')
+	assert isinstance(site['alias'], unicode)
+	assert site.has_key('nodes')
+	assert isinstance(site['nodes'], list)
+	assert site.has_key('type')
+	assert site['type'] == Site.__resource_type__
+	assert site.has_key('created')
+	assert datetime.fromtimestamp(site['created'])
+	assert site.has_key('updated')
+	assert datetime.fromtimestamp(site['updated'])
+
+def assert_node_json(node_json):
+	try:
+		node = ujson.loads(node_json)
+	except:
+		assert False
+	assert node.has_key('id')
+	assert isinstance(node['id'], int)
+	assert node.has_key('site_id') or not node['site_id']
+	assert isinstance(node['site_id'], int)
+	assert node.has_key('alias')
+	assert isinstance(node['alias'], unicode)
+	assert node.has_key('nodetype_id')
+	assert isinstance(node['nodetype_id'], int) or not node['nodetype_id']
+	assert node.has_key('sensors')
+	assert isinstance(node['sensors'], list)
+	assert node.has_key('latitude')
+	assert isinstance(node['latitude'], float)
+	assert node.has_key('longitude')
+	assert isinstance(node['longitude'], float)
+	assert node.has_key('type')
+	assert node['type'] == Node.__resource_type__
+	assert node.has_key('created')
+	assert datetime.fromtimestamp(float(node['created']))
+	assert node.has_key('updated')
+	assert datetime.fromtimestamp(float(node['updated']))
 
 class TestResources:
 	url = 'http://localhost:8080/'
 
 	def test_site_get(self):
-		pass
+		r = requests.get(url)
+		assert r.ok
+		r = ujson.loads(r.text)
+		assert r.has_key('objects')
+		assert len(r['objects']) == 1
+		# assert r['objects']
 
 	def test_site_delete(self):
 		pass
