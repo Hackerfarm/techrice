@@ -374,7 +374,7 @@ class NodeListResource(restful.Resource):
 	def get(self):		
 		site_id = request.args.get('site_id')
 		if not site_id:
-			return jsonify(Error('missing query arg: site_id'))
+			return jsonify(ApiError('missing query arg: site_id'))
 		nodes = Node.query.filter(Node.site_id == site_id).all()
 		if nodes:
 			return jsonify({'objects': [node.json() for node in nodes]})
