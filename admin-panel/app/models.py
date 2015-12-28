@@ -10,6 +10,8 @@ AuditMixin will add automatic timestamp of created and modified by who
 
 
 """
+from app import db
+Model.query = db.session.query_property()
 
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, event
         
