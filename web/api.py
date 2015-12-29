@@ -14,7 +14,7 @@ rest_api = restful.Api(flapp)
 # from sqlalchemy import create_engine
 # from sqlalchemy.orm import scoped_session, sessionmaker
 
-dburi = 'postgresql://halfdan@localhost:5432/techrice'
+
 
 #Base = declarative_base()
 # engine = create_engine('postgresql://halfdan:halfdan@localhost/techrice', convert_unicode = True)
@@ -251,10 +251,10 @@ def create_user():
 
 
 # Views
-@flapp.route('/')
-@login_required
-def home():
-    return 'hello'
+# @flapp.route('/')
+# # @login_required
+# def home():
+#     return 'hello'
 
 
 
@@ -498,6 +498,61 @@ class ReadingListResource(restful.Resource):
 			return jsonify(ApiObjects([reading.json() for reading in readings]))
 		else:
 			return jsonify(ApiObjects())
+
+	def post(self):
+		def store_reading(sensor_id, value, timestamp):
+			
+			try:
+				sensor = Sensor.query.filter_by(id = sensor_id).first()
+			except sqlalchemy.exc.DataError:
+				return jsonify(ApiError('Invalid sensor_id: {}'.format(sensor_id)))
+			if not sensor:
+				return jsonify(ApiError('No such sensor: {}'.format(sensor_id)))
+			
+			try:
+				value = float(value)
+			except ValueError:
+				return jsonify(ApiError('value could not be converted into float: {}'.format(value)))
+			try:
+				timestamp = datetime.fromtimestamp(float(timestamp))
+			except ValueError, TypeError:
+				return jsonify(ApiError('timestamp not provided as epoch time: {}'.format(timestamp)))
+			print sensor, value, timestamp
+			# return 'ok'
+			reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
+			return reading.id
+
+		format = request.args.get('format', 'dict')
+		if not format in ['dict', 'compact']:
+			return jsonify(ApiError('format arg must be either "dict" or "compact"'))
+		# print request.form
+		# return 'ok'
+		data = request.form.get('readings', None)
+		if not data: 
+			return jsonify(ApiError('data must be passed in the request body'))
+
+
+		if format == 'compact':
+			# try:
+				stored_readings = []
+				print map(lambda r: r.split(','), data.split(';'))
+				for sensor_id, value, timestamp in map(lambda r: r.split(','), data.split(';')):
+					# pass
+					stored_readings.append(store_reading(sensor_id, value, timestamp))
+					return ApiObjects(stored_readings)
+			# except Exception:
+			# 	return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value,timestamp;sensor_id,value,timestamp;" etc.'))
+		elif format == 'json':
+			try:
+				stored_readings = []
+				readings = ujson.loads(data)
+				for stored_readings, reading in enumerate(readings):
+					sensor_id, value, timestamp = reading.get('sensor_id'), reading.get('value'), reading.get('timestamp')
+					stored_readings.append(store_reading(sensor_id, value, timestamp))
+					return ApiObjects(stored_readings)
+			except Exception:
+				return jsonify(ApiError('Please submit data as a JSON list if dictionaries with the keys "sensor_id", "value", "timestamp"'))
+
 
 rest_api.add_resource(ReadingListResource, '/readings')
 
@@ -807,6 +862,10 @@ def make_map(nodes):
 	print Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
 	return Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
 
+
+@flapp.route('/')
+def index():
+	return 'Welcome to TechRice'
 
 
 if __name__ == '__main__':
