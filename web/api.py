@@ -490,17 +490,9 @@ class ReadingResource(restful.Resource):
 
 rest_api.add_resource(ReadingResource, '/reading/<int:reading_id>', '/reading')
 
-class ReadingListResource(restful.Resource):
-	def get(self):
-		sensor_id = request.args.get('sensor_id')
-		readings = Reading.query.filter(Reading.sensor_id == sensor_id).all()
-		if readings:
-			return jsonify(ApiObjects([reading.json() for reading in readings]))
-		else:
-			return jsonify(ApiObjects())
 
-	def post(self):
-		def store_reading(sensor_id, value, timestamp):
+
+def store_reading(sensor_id, value, timestamp):
 			
 			try:
 				sensor = Sensor.query.filter_by(id = sensor_id).first()
@@ -513,45 +505,53 @@ class ReadingListResource(restful.Resource):
 				value = float(value)
 			except ValueError:
 				return jsonify(ApiError('value could not be converted into float: {}'.format(value)))
+			
 			try:
 				timestamp = datetime.fromtimestamp(float(timestamp))
 			except ValueError, TypeError:
 				return jsonify(ApiError('timestamp not provided as epoch time: {}'.format(timestamp)))
-			print sensor, value, timestamp
-			# return 'ok'
+			
 			reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
 			return reading.id
 
-		format = request.args.get('format', 'dict')
-		if not format in ['dict', 'compact']:
-			return jsonify(ApiError('format arg must be either "dict" or "compact"'))
-		# print request.form
-		# return 'ok'
+class ReadingListResource(restful.Resource):
+	def get(self):
+		sensor_id = request.args.get('sensor_id')
+		readings = Reading.query.filter(Reading.sensor_id == sensor_id).all()
+		if readings:
+			return jsonify(ApiObjects([reading.json() for reading in readings]))
+		else:
+			return jsonify(ApiObjects())
+
+	def post(self):
+		format = request.args.get('format', 'json')
+		if not format in ['json', 'compact']:
+			return jsonify(ApiError('format arg must be either "json" or "compact"'))
 		data = request.form.get('readings', None)
 		if not data: 
 			return jsonify(ApiError('data must be passed in the request body'))
 
-
 		if format == 'compact':
-			# try:
+			try:
 				stored_readings = []
 				print map(lambda r: r.split(','), data.split(';'))
 				for sensor_id, value, timestamp in map(lambda r: r.split(','), data.split(';')):
-					# pass
 					stored_readings.append(store_reading(sensor_id, value, timestamp))
 					return ApiObjects(stored_readings)
-			# except Exception:
-			# 	return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value,timestamp;sensor_id,value,timestamp;" etc.'))
+			except Exception:
+				return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value,timestamp;sensor_id,value,timestamp;" etc.'))
+		
 		elif format == 'json':
 			try:
 				stored_readings = []
 				readings = ujson.loads(data)
-				for stored_readings, reading in enumerate(readings):
+				print readings
+				for reading in readings:
 					sensor_id, value, timestamp = reading.get('sensor_id'), reading.get('value'), reading.get('timestamp')
 					stored_readings.append(store_reading(sensor_id, value, timestamp))
 					return ApiObjects(stored_readings)
 			except Exception:
-				return jsonify(ApiError('Please submit data as a JSON list if dictionaries with the keys "sensor_id", "value", "timestamp"'))
+				return jsonify(ApiError('Please submit data as a JSON list of dict, like this: "[{"timestamp":1451394155.4250559807,"sensor_id":1,"value":99.0}]"'))
 
 
 rest_api.add_resource(ReadingListResource, '/readings')
