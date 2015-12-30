@@ -1,6 +1,7 @@
 import logging
 from flask import Flask
 from flask.ext.appbuilder import SQLA, AppBuilder
+from flask.ext import restful
 
 """
  Logging configuration
@@ -13,7 +14,7 @@ app = Flask(__name__)
 app.config.from_object('config')
 db = SQLA(app)
 appbuilder = AppBuilder(app, db.session)
-
+rest_api = restful.Api(app)
 
 """
 from sqlalchemy.engine import Engine
@@ -28,5 +29,5 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 """    
 
-from app import views
+from app import views, resources
 
