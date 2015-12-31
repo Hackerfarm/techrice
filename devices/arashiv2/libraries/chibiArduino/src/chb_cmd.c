@@ -89,8 +89,8 @@ static void chb_cmd_display()
 static void chb_cmd_parse(char *cmd)
 {
     uint8_t argc, i = 0;
-    char *argv[50];
-    char buf[100];
+    char *argv[30];
+    char buf[50];
     cmd_t *cmd_entry;
 
     fflush(stdout);
