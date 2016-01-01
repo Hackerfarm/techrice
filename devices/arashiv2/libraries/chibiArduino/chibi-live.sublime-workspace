@@ -1,0 +1,380 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ATMe",
+				"ATMega1284P"
+			],
+			[
+				"CHB",
+				"CHB_AT86RF212"
+			],
+			[
+				"chb_err",
+				"chb_err_not_supported"
+			],
+			[
+				"chb_reg_read",
+				"chb_reg_read_mod_write"
+			],
+			[
+				"TRX_CTR",
+				"TRX_CTRL_2"
+			],
+			[
+				"chb_reg_rea",
+				"chb_reg_read_mod_write"
+			],
+			[
+				"TRX",
+				"TRX_CTRL_2"
+			],
+			[
+				"CHB_AT",
+				"CHB_AT86RF212"
+			],
+			[
+				"CHB_A",
+				"CHB_AT86RF231"
+			],
+			[
+				"chb_reg",
+				"chb_reg_read_mod_write"
+			],
+			[
+				"get",
+				"getElementById"
+			],
+			[
+				"doc",
+				"document	{}"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/H/Projects/Reboot/Projects/IAEA-Cairo/Hardware/XBee WiFi/example wifi code.c",
+			"settings":
+			{
+				"buffer_size": 13723,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 380.0,
+		"selected_items":
+		[
+			[
+				"pack",
+				"Package Control: Install Package"
+			],
+			[
+				"lint",
+				"SublimeLinter: Show Error List"
+			],
+			[
+				"lin",
+				"SublimeLinter: Show Error List"
+			],
+			[
+				"",
+				"SublimeLinter: Extract Annotations"
+			],
+			[
+				"p",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Remove Package"
+			],
+			[
+				"read",
+				"ReadmePlease"
+			],
+			[
+				"sni",
+				"Snippet: If Condition"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 316.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Programs/Android/adt-bundle-windows-x86-20131030/eclipse/eclipse.ini",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/FREAKDUINO-CHIBI-LR-1284P-V2.1/FREAKDUINO-CHIBI-LR-1284P-V2.1.opj",
+		"/C/test.php",
+		"/H/Media/Books/Archive - Engineering and Physics/!-GIS/Learning QGIS 2.0",
+		"/F/Archive - Training/Programming - Introduction to Java Programming/Java Tutorial by Patrick Washington.zip.002",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/SABOTEN/SABOTEN-V1.1.opj",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GTL",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GBL",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GBO",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GML",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GTO",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.drl",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GBS",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-09-09 - WCO-COSMIC-BEAT-PANEL/PANEL/CAM350/COSMIC-PANEL.GTS",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/FL-MICROCHIBI-900MHZ/FL-MICROCHIBI-900.opj",
+		"/C/Documents and Settings/cjwang/My Documents/Downloads/hedgehog.jpg-large",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_drvr.c",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/chibiUsrCfg.h",
+		"/C/Documents and Settings/cjwang/Local Settings/Temp/wz3a5c/libraries/chibiArduino/src/chb_rx_int.c",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_rx_int.c",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/FL-USB-2G4HZ/FL-USB_2G4HZ.opj",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/ARASHI-GATEWAY-900M-LR/ARASHI-GATEWAY-900M-LR.opj",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/FL-USB-900M-LR/FL-USB-900M-LR.opj",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-02-17 - ARASHI-GW-2G4HZ-V1.0/Design Files/ARASHI-GATEWAY-2.4GHZ.opj",
+		"/C/Programs/Arduino/Zips/show_hidden_com_ports.txt",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_drvr.h",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_eeprom.c",
+		"/C/Programs/Arduino/arduino-1.0.1/hardware/arduino/boards.txt",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_buf.h",
+		"/C/Programs/Arduino/arduino-0021/hardware/arduino/cores/arduino/HardwareSerial.cpp",
+		"/C/Programs/Arduino/arduino-0021/hardware/arduino/cores/arduino/HardwareSerial.h",
+		"/C/Programs/Arduino/arduino-1.0.1/hardware/arduino/cores/arduino/HardwareSerial.h",
+		"/C/Programs/Arduino/arduino-1.0.1/hardware/arduino/cores/arduino/HardwareSerial.cpp",
+		"/G/arduino-1.0.5/hardware/arduino/boards.txt",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_cmd.c",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/chibi.h",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/src/chb_aes.c",
+		"/C/Programs/Arduino/arduino-1.0.1/libraries/Chibi/chibi.cpp",
+		"/G/arduino-1.0.5/hardware/freaklabs/boards.txt",
+		"/C/Programs/Arduino/arduino-1.0.1/hardware/freaklabs/boards.txt",
+		"/H/Media/My Documents/Documents/misc.txt",
+		"/H/Projects/Temp/javascript/Node/test.js",
+		"/H/Projects/Arduino/Saboten/Release/Software/Arduino/sketches/SabotenTest/SabotenTest.ino",
+		"/H/Projects/Arduino/Saboten/Release/Software/Arduino/libraries/Ethernet/utility/w5100.cpp",
+		"/C/Temp/VMWare/Ubuntu 12.04/Ubuntu1204/Ubuntu.vmx",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/Releases/2013-02-17 - ARASHI-GW-900-V1.0/Design Files/ARASHI-GATEWAY-900M.opj",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/H/Projects/Arduino/Saboten/Release/Software/Arduino/sketches/ArashiEthernet/ArashiEthernet.ino",
+		"/H/Projects/Arduino/Chibi/src/chb_aes.c",
+		"/C/Temp/test.txt",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/User/Default (Windows).sublime-mousemap",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/User/Default (Windows).sublime-keymap",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/CTags/Default.sublime-keymap",
+		"/H/Projects/Temp/javascript/jquery/Working Files/Chapter 03/exercise/example.html",
+		"/H/Projects/Temp/javascript/jquery/Working Files/Chapter 03/exercise/myscript.js",
+		"/H/Projects/Temp/javascript/jquery/Working Files/Chapter 02/exercise/styles.css",
+		"/H/Projects/Temp/javascript/jquery/Working Files/Chapter 02/exercise/exercise.html",
+		"/H/Projects/Temp/javascript/jquery/Working Files/Chapter 02/exercise/myscript.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Accordion/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Accordion_finished/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Accordion_finished/resources.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Accordion/resources.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Resize/mission.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Resize/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Countdown/index.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap14/Countdown/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap13/Ajax/AjaxExample.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap13/Ajax/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap11/jQueryIntro/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap12/Strict Mode/strict.html",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap12/Strict Mode/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap11/jQueryIntro/tours.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap10/pre_codechecker.js",
+		"/C/Programs/Arduino/arduino-0021/libraries/Chibi/src/chb.c",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/SublimeLinter/SublimeLinter.sublime-settings",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/User/SublimeLinter.sublime-settings",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/User/Base File.sublime-settings",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap09/InlineStyles/mission.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap09/InlineStyles/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap08/PreventSubmission/contact.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap08/ShowHideSections/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap08/PreventSubmission/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap06/FocusAndBlur/contact.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap06/FocusAndBlur/script.js",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap06/ClickAndLoad/mission.htm",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap06/ClickAndLoad/clickandload.sublime-project",
+		"/H/Projects/Temp/javascript/Exercise Files/Chap06/ClickAndLoad/script.js",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/.codeintel/config",
+		"/C/Documents and Settings/cjwang/Application Data/Sublime Text 2/Packages/TernJS/README.md",
+		"/H/Projects/Temp/javascript/Ex_Files_JS_EssT_2011/Exercise Files/Chap05/AccessingDOM/script.js",
+		"/H/Projects/Temp/javascript/Ex_Files_JS_EssT_2011/Exercise Files/Chap05/AccessingDOM/test.js",
+		"/C/Programs/Arduino/arduino-0021/libraries/Chibi/chibi.cpp",
+		"/C/Programs/Arduino/arduino-0021/libraries/Chibi/src/chb_drvr.h",
+		"/C/Programs/Arduino/arduino-0021/libraries/Chibi/src/chb_drvr.c",
+		"/C/Temp/site/configuration.php",
+		"/C/Programs/Arduino/arduino-0021/libraries/Chibi/src/chb_rx_int.c",
+		"/C/Programs/Arduino/Optiboot/optiboot/bootloaders/optiboot/optiboot.c",
+		"/H/Projects/Temp/sublime/Ex_Files_UaR_SublimeTxt_2/Exercise Files/roux_website/_css/main.css",
+		"/H/Projects/Freaklabs/Hardware/trunk/freaklabs/FL-ASCII32-ETHERNET/FL-ASCII32-ETHERNET.eco",
+		"/C/Documents and Settings/cjwang/Local Settings/Temp/wz6d86/Ex_Files_UaR_Backbone/ExerciseFiles/02/06/final/node_modules/express/lib/application.js"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			"C:\\Programs\\Arduino\\arduino-1.0.1\\libraries\\Chibi",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"arashi-gateway",
+			"FL-USB-2G4HZ",
+			"FL-USB_2G4HZ",
+			"FL-USB-2G4HZ",
+			"print\n",
+			")\n",
+			"maxwidth",
+			"svga",
+			"get_",
+			"set_mode",
+			"TRX_CTRL_2",
+			"set_chan",
+			"set_mode",
+			"radio_id",
+			"packages",
+			"jquery",
+			"join",
+			"error"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"ARASHI-GATEWAY-2.4GHZ",
+			"FL-USB-900M-LR"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/H/Projects/Reboot/Projects/IAEA-Cairo/Hardware/XBee WiFi/example wifi code.c",
+					"settings":
+					{
+						"buffer_size": 13723,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2820,
+								2820
+							]
+						],
+						"settings":
+						{
+							"auto_name": "",
+							"syntax": "Packages/C++/C.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1267.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 34.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"chb_dr",
+				"Chibi/src/chb_drvr.c"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+			[
+				"",
+				"/H/Projects/Temp/sublime/Ex_Files_UaR_SublimeTxt_2/Exercise Files/roux_website/roux_project.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 189.0,
+	"status_bar_visible": true
+}
