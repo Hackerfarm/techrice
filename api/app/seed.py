@@ -19,7 +19,7 @@ def loggeobrowngen(n = -1, offset = 50):
 
 def seed_site(sensors = 1, days = 7, interval_seconds = 3600):
 	site = Site.create(alias = 'seeded_site')
-	node = Node.create(alias = 'seeded_node', site = site, latitude = 35.146623 + random(), longitude = 139.9835682 + random())
+	node = Node.create(alias = 'seeded_node', site = site, latitude = 35.146623 + random() / 100.0, longitude = 139.9835682 + random() / 100.0)
 	sensortype = SensorType.create(name = 'HC SR-04', unit = 'cm')
 	for i in range(sensors):
 		sensor = Sensor.create(sensortype = sensortype, node = node, alias = 'water distance %s'%i)
