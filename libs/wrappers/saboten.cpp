@@ -31,7 +31,7 @@ void Board::register_sensor(BaseSensor *sensor){
 void Board::read_sensors(unsigned char *buffer){
   int n_sensors = this->sensors->size();
   for(int i; i<n_sensors; i++){
-    this->sensors->at(i)->read(buffer);
+    double value = this->sensors->at(i)->read(buffer);
   }
 }
 

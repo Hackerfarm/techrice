@@ -4,7 +4,8 @@ class BaseSensor{
 	public: 
 		BaseSensor(unsigned int sensor_id);
 		unsigned int sensor_id;
-		virtual void read(unsigned char *buffer) = 0;
+		unsigned int n_values;
+		virtual double read(unsigned char *buffer) = 0;
 };
 
 class Paralax28015REVC_Sensor:public BaseSensor{
@@ -13,7 +14,7 @@ class Paralax28015REVC_Sensor:public BaseSensor{
 	
 	public:
 		Paralax28015REVC_Sensor(unsigned int sensor_id, int sonar_pin);
-		void read(unsigned char *buffer);
+		double read(unsigned char *buffer);
 };
 
 #include "DHT.h"
@@ -26,7 +27,7 @@ class DHT_V12_Sensor:public BaseSensor{
 		dht *sensor;
 	public:
 		DHT_V12_Sensor(unsigned int sensor_id, unsigned char signal_pin);
-		void read(unsigned char *buffer);
+		double read(unsigned char *buffer);
 };
 
 

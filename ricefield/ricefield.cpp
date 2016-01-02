@@ -9,7 +9,7 @@
 
 #include <SPI.h>
 
-
+#define TX_LENGTH 100
 
 Saboten *board = new Saboten(1, 57600);
 
@@ -18,14 +18,14 @@ void setup()
 {
   board->register_sensor(new Paralax28015REVC_Sensor(1, 5));  
   chibiCmdInit(57600);
-  board->init_sdcard();
+  board->sd_init();
   
   // This should be done using NTP
   board->set_datetime(16, 1, 2, 14, 20, 0);
   char msg[100];
   memset(msg, 0, 100);
   sprintf(msg, "Clock set to: %s", (char*)board->timestamp());
-  board->writeData((unsigned char*)msg);
+  board->sd_write((unsigned char*)msg);
   free(msg);
   
 
@@ -43,7 +43,7 @@ void loop()
   Serial.println((char*) tx_buf);
   
   // chibiTx(AGGREGATOR_SHORT_ADDRESS, tx_buf, TX_LENGTH);
-  board->writeData(tx_buf);
+  board->sd_write(tx_buf);
   
   free(tx_buf);
   delay(1000);
