@@ -109,8 +109,6 @@ class Node(ExtendedBase, db.Model):
 
 
 
-
-
 class NodeType(ExtendedBase, db.Model):
 	__tablename__ = 'nodetypes'
 	id = db.Column(db.Integer(), primary_key = True)
@@ -166,3 +164,12 @@ class Reading(ExtendedBase, db.Model):
 
 	def json(self):
 		return {'id': self.id, 'sensor_id': self.sensor_id, 'value': self.value, 'timestamp': str(self.timestamp), 'created': str(self.created), 'updated': str(self.updated)}
+
+
+
+
+
+
+
+
+

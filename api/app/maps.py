@@ -1,4 +1,4 @@
-from flask import render_template, Markup
+from flask import render_template, Markup, url_for
 
 import uuid
 from app import app
@@ -22,7 +22,6 @@ class NodeMarker(object):
 
 	def __repr__(self):
 		return str(self.__dict__)
-
 
 @app.route("/map/nodes")
 def nodes_map():

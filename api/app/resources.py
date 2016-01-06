@@ -9,6 +9,8 @@ from models import Site, Node, NodeType, Sensor, SensorType, Reading
 import sqlalchemy
 from datetime import datetime
 
+from flask.ext.security import login_required, http_auth_required
+
 
 
 class ApiError(dict):
@@ -20,7 +22,7 @@ class ApiObjects(dict):
 		self['objects'] = objects
 
 
-
+sec = http_auth_required
 
 class SiteResource(restful.Resource):
 	def get(self, site_id = None):
@@ -30,6 +32,7 @@ class SiteResource(restful.Resource):
 		else: 
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def delete(self, site_id = None):
 		site = Site.query.filter_by(id = site_id).first()
 		if site: 
@@ -38,6 +41,7 @@ class SiteResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def post(self):
 		alias = request.form.get('alias', None)
 		site = Site.create(alias = alias)
@@ -70,6 +74,7 @@ class NodeResource(restful.Resource):
 		else:
 			jsonify(ApiObjects())
 
+	@http_auth_required
 	def delete(self, node_id = None):
 		node = Node.query.filter_by(id = node_id).first()
 		if node: 
@@ -77,7 +82,8 @@ class NodeResource(restful.Resource):
 			return jsonify(ApiObjects(node.json()))
 		else:
 			jsonify(ApiObjects())
-		
+	
+	@http_auth_required
 	def post(self):
 		args = {}
 		
@@ -127,8 +133,6 @@ class NodeListResource(restful.Resource):
 rest_api.add_resource(NodeListResource, '/nodes', '/node/all')
 
 
-
-
 			
 
 
@@ -140,6 +144,7 @@ class SensorResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def delete(self, sensor_id = None):
 		sensor = Sensor.query.filter_by(id = sensor_id).first()
 		if sensor:
@@ -148,6 +153,8 @@ class SensorResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	
+	@http_auth_required
 	def post(self):
 		args = {}
 		
@@ -195,6 +202,28 @@ class SensorListResource(restful.Resource):
 rest_api.add_resource(SensorListResource, '/sensors')
 
 
+
+def store_reading(sensor_id, value, timestamp):	
+	try:
+		sensor = Sensor.query.filter_by(id = sensor_id).first()
+	except sqlalchemy.exc.DataError:
+		return jsonify(ApiError('Invalid sensor_id: {}'.format(sensor_id)))
+	if not sensor:
+		return jsonify(ApiError('No such sensor: {}'.format(sensor_id)))
+	
+	try:
+		value = float(value)
+	except ValueError:
+		return jsonify(ApiError('value could not be converted into float: {}'.format(value)))
+	
+	try:
+		timestamp = datetime.fromtimestamp(float(timestamp))
+	except (ValueError, TypeError):
+		return jsonify(ApiError('timestamp not provided as epoch time: {}'.format(timestamp)))
+	reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
+	return reading.id
+
+
 class ReadingResource(restful.Resource):
 	def get(self, reading_id = None):
 		reading = Reading.query.filter_by(id = reading_id).first()
@@ -203,6 +232,7 @@ class ReadingResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def delete(self, reading_id = None):
 		reading = Reading.query.filter_by(id = reading_id).first()
 		if reading:
@@ -211,6 +241,7 @@ class ReadingResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def post(self):
 		sensor_id = request.form.get('sensor_id')
 		value = request.form.get('value')
@@ -223,39 +254,14 @@ class ReadingResource(restful.Resource):
 		if not sensor_id: 
 			return jsonify(ApiError('missing sensor_id'))
 		else:
-			sensor = Sensor.query.filter_by(id = sensor_id).first()
-			reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
-			if reading:
-				return jsonify(ApiObjects(reading.json()))
-			else:
-				return jsonify(ApiObjects())
+			reading_id = store_reading(sensor_id, value, timestamp)
+			return ApiObjects(reading_id)
 
 
 rest_api.add_resource(ReadingResource, '/reading/<int:reading_id>', '/reading')
 
 
 
-def store_reading(sensor_id, value, timestamp):
-			
-			try:
-				sensor = Sensor.query.filter_by(id = sensor_id).first()
-			except sqlalchemy.exc.DataError:
-				return jsonify(ApiError('Invalid sensor_id: {}'.format(sensor_id)))
-			if not sensor:
-				return jsonify(ApiError('No such sensor: {}'.format(sensor_id)))
-			
-			try:
-				value = float(value)
-			except ValueError:
-				return jsonify(ApiError('value could not be converted into float: {}'.format(value)))
-			
-			try:
-				timestamp = datetime.fromtimestamp(float(timestamp))
-			except ValueError, TypeError:
-				return jsonify(ApiError('timestamp not provided as epoch time: {}'.format(timestamp)))
-			
-			reading = Reading.create(sensor = sensor, value = value, timestamp = timestamp)
-			return reading.id
 
 class ReadingListResource(restful.Resource):
 	def get(self):
@@ -266,6 +272,7 @@ class ReadingListResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def post(self):
 		format = request.args.get('format', 'json')
 		if not format in ['json', 'compact']:
@@ -279,7 +286,8 @@ class ReadingListResource(restful.Resource):
 				stored_readings = []
 				print map(lambda r: r.split(','), data.split(';'))
 				for sensor_id, value, timestamp in map(lambda r: r.split(','), data.split(';')):
-					stored_readings.append(store_reading(sensor_id, value, timestamp))
+					reading_id = store_reading(sensor_id, value, timestamp)
+					stored_readings.append(reading_id)
 					return ApiObjects(stored_readings)
 			except Exception:
 				return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value,timestamp;sensor_id,value,timestamp;" etc.'))
@@ -291,7 +299,8 @@ class ReadingListResource(restful.Resource):
 				print readings
 				for reading in readings:
 					sensor_id, value, timestamp = reading.get('sensor_id'), reading.get('value'), reading.get('timestamp')
-					stored_readings.append(store_reading(sensor_id, value, timestamp))
+					reading_id = store_reading(sensor_id, value, timestamp)
+					stored_readings.append(reading_id)
 					return ApiObjects(stored_readings)
 			except Exception:
 				return jsonify(ApiError('Please submit data as a JSON list of dict, like this: "[{"timestamp":1451394155.4250559807,"sensor_id":1,"value":99.0}]"'))
