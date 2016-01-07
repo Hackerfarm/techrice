@@ -192,6 +192,8 @@ rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>')
 class SensorListResource(restful.Resource):
 	def get(self):
 		node_id = request.args.get('node_id')
+		if not node_id:
+			return jsonify(ApiError('missing query arg: node_id'))
 		sensors = Sensor.query.filter(Sensor.node_id == node_id).all()
 		if sensors:
 			return jsonify(ApiObjects([sensor.json() for sensor in sensors]))
@@ -266,6 +268,8 @@ rest_api.add_resource(ReadingResource, '/reading/<int:reading_id>', '/reading')
 class ReadingListResource(restful.Resource):
 	def get(self):
 		sensor_id = request.args.get('sensor_id')
+		if not sensor_id:
+			return jsonify(ApiError('missing query arg: sensor_id'))
 		readings = Reading.query.filter(Reading.sensor_id == sensor_id).all()
 		if readings:
 			return jsonify(ApiObjects([reading.json() for reading in readings]))
