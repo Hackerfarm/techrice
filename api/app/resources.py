@@ -179,7 +179,7 @@ class SensorResource(restful.Resource):
 			return jsonify(ApiObjects())
 
 	
-	@http_auth_required
+	# @http_auth_required
 	def post(self):
 		args = {}
 		
@@ -191,7 +191,7 @@ class SensorResource(restful.Resource):
 			else: 
 				return jsonify(ApiError('node {} not found'.format(node_id)))
 		else: 
-			return jsonify(ApiError('missing node_id'))
+			return jsonify(ApiError('missing form data: node_id'))
 
 		sensortype_id = request.form.get('sensortype_id')
 		if sensortype_id: 
@@ -201,7 +201,7 @@ class SensorResource(restful.Resource):
 			else: 
 				return jsonify(ApiError('sensortype {} not found'.format(sensortype_id)))
 		else: 
-			return jsonify(ApiError('missing sensortype_id'))
+			return jsonify(ApiError('missing form data: sensortype_id'))
 
 		args.update({'name': request.form.get('name')})
 
@@ -211,7 +211,7 @@ class SensorResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
-rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>')
+rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>', '/sensor')
 
 
 class SensorListResource(restful.Resource):
