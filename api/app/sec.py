@@ -24,11 +24,9 @@ from flask.ext.security import Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
-@app.before_first_request
-def create_user():
-    if not User.query.first():
-        db.create_all()
-        user_datastore.create_user(email='dalekk@gmail.com', password=encrypt_password('password'))
+def create_user(email, password):
+    with app.app_context():
+        user_datastore.create_user(email=email, password=encrypt_password(password))
         db.session.commit()	
 
 
