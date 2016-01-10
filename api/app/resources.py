@@ -22,9 +22,9 @@ class ApiObjects(dict):
 		self['objects'] = objects
 
 
-sec = http_auth_required
 
 class SiteResource(restful.Resource):
+	@http_auth_required
 	def get(self, site_id = None):
 		site = Site.query.filter_by(id = site_id).first()
 		if site: 
@@ -43,8 +43,8 @@ class SiteResource(restful.Resource):
 
 	@http_auth_required
 	def post(self):
-		alias = request.form.get('alias', None)
-		site = Site.create(alias = alias)
+		name = request.form.get('name', None)
+		site = Site.create(name = name)
 		if site:
 			return jsonify(ApiObjects(site.json()))
 		else:
@@ -87,7 +87,7 @@ class NodeResource(restful.Resource):
 	def post(self):
 		args = {}
 		
-		args.update({'alias' : request.form.get('alias', None)})
+		args.update({'name' : request.form.get('name', None)})
 		args.update({'longitude' : request.form.get('longitude', None)})
 		args.update({'latitude' : request.form.get('latitude', None)})
 
@@ -108,7 +108,6 @@ class NodeResource(restful.Resource):
 				args.update({'nodetype' : nodetype}) 
 			else: 
 				return jsonify(ApiError('nodetype {} not found'.format(nodetype_id)))
-		else: return jsonify(ApiError('missing query arg: nodetype_id'))
 		
 		node = Node.create(**args)
 		if node:
@@ -133,7 +132,33 @@ class NodeListResource(restful.Resource):
 rest_api.add_resource(NodeListResource, '/nodes', '/node/all')
 
 
-			
+class SensorTypeResource(restful.Resource):
+	def get(self, sensortype_id):
+		sensortype = SensorType.query.filter_by(id = sensortype_id).first()
+		if sensortype:
+			return jsonify(ApiObjects(sensortype.json()))
+		else:
+			return jsonify(ApiObjects())
+
+	def delete(self, sensortype_id):
+		sensortype = SensorType.query.filter_by(id = sensortype_id).first()
+		if sensortype:
+			SensorType.delete(id = sensortype.id)
+			return jsonify(ApiObjects(sensortype.json()))
+		else:
+			return jsonify(ApiObjects())
+
+	def post(self):
+		name = request.form.get('name', None)
+		unit = request.form.get('unit', None)
+		if not name:
+			return jsonify(ApiError('missing form data: name'))
+		if not unit:
+			return jsonify(ApiError('missing form data: unit'))
+		sensortype = SensorType.create(name = name, unit = unit)
+		return jsonify(ApiObjects(sensortype.json()))	
+
+rest_api.add_resource(SensorTypeResource, '/sensortype/<int:sensortype_id>', '/sensortype')
 
 
 class SensorResource(restful.Resource):
@@ -178,7 +203,7 @@ class SensorResource(restful.Resource):
 		else: 
 			return jsonify(ApiError('missing sensortype_id'))
 
-		args.update({'alias': request.form.get('alias')})
+		args.update({'name': request.form.get('name')})
 
 		sensor = Sensor.create(**args)
 		if sensor:
