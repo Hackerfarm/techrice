@@ -67,12 +67,12 @@ class Site(ExtendedBase, db.Model):
 	__resource_type__ = 'site'
 
 	id = db.Column(db.Integer, primary_key = True)
-	alias = db.Column(db.String(100) )
+	name = db.Column(db.String(100) )
 	nodes = db.relationship('Node', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('site', single_parent = True))
 
 	def json(self):
 		return {'id': self.id, 
-				'alias': self.alias, 
+				'name': self.name, 
 				'nodes': map(lambda n: n.id, self.nodes),
 				'type' : Site.__resource_type__,
 				'created':float(self.created.strftime("%s.%f")),
@@ -86,7 +86,7 @@ class Node(ExtendedBase, db.Model):
 	__tablename__ = 'nodes'
 	__resource_type__ = 'node'
 	id = db.Column(db.Integer, primary_key = True )
-	alias = db.Column(db.String(100))
+	name = db.Column(db.String(100))
 	longitude = db.Column(db.Float()) 
 	latitude = db.Column(db.Float())
 	
@@ -95,7 +95,7 @@ class Node(ExtendedBase, db.Model):
 	sensors = db.relationship('Sensor', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('node'))
 
 	def json(self):
-		return {'alias': self.alias, 
+		return {'name': self.name, 
 				'id': self.id, 
 				'longitude': self.longitude, 
 				'latitude': self.latitude, 
@@ -136,14 +136,14 @@ class Sensor(ExtendedBase, db.Model):
 	__tablename__ = 'sensors'
 	
 	id = db.Column(db.Integer, primary_key = True )
-	alias = db.Column(db.String())
+	name = db.Column(db.String())
 	readings = db.relationship('Reading', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('sensor', single_parent = True))
 
 	node_id = db.Column(db.Integer, db.ForeignKey('nodes.id', ondelete = 'CASCADE') )
 	sensortype_id = db.Column(db.Integer, db.ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
 		
 	def json(self):
-		return {'id': self.id, 'alias': self.alias, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
+		return {'id': self.id, 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
 
 
 class Reading(ExtendedBase, db.Model):
