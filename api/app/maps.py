@@ -33,13 +33,12 @@ def site_map(site_id):
 	nodes = Node.query.filter((Node.site_id == site_id) & (Node.longitude != None) & (Node.latitude != None)).all()
 	return make_map(nodes)
 
-
 def make_map(nodes):
 	markers = [NodeMarker(
 		longitude = node.longitude, 
 		latitude = node.latitude, 
-		infowindow = node.alias, 
-		click_redirect = 'http://localhost:8080/chart/weekly/node/{}'.format(node.id)
+		infowindow = '{} (id {})'.format(node.name, node.id), 
+		# click_redirect = 'http://localhost:8080/chart/weekly/node/{}'.format(node.id)
+		click_redirect = '/chart/weekly/node/{}'.format(node.id)
 		) for node in nodes]
-	print Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
-	return Markup(render_template("gmap.html", gmaps_api_key = "AIzaSyC5RK9Zsmy4a_Qr2xMoP_PNypjzv0JIaxE", markers = markers))
+	return Markup(render_template("gmap.html", markers = markers))
