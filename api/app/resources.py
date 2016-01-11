@@ -24,7 +24,6 @@ class ApiObjects(dict):
 
 
 class SiteResource(restful.Resource):
-	@http_auth_required
 	def get(self, site_id = None):
 		site = Site.query.filter_by(id = site_id).first()
 		if site: 
@@ -140,6 +139,7 @@ class SensorTypeResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def delete(self, sensortype_id):
 		sensortype = SensorType.query.filter_by(id = sensortype_id).first()
 		if sensortype:
@@ -148,6 +148,7 @@ class SensorTypeResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def post(self):
 		name = request.form.get('name', None)
 		unit = request.form.get('unit', None)
@@ -179,7 +180,7 @@ class SensorResource(restful.Resource):
 			return jsonify(ApiObjects())
 
 	
-	# @http_auth_required
+	@http_auth_required
 	def post(self):
 		args = {}
 		
@@ -313,11 +314,10 @@ class ReadingListResource(restful.Resource):
 		if format == 'compact':
 			try:
 				stored_readings = []
-				print map(lambda r: r.split(','), data.split(';'))
 				for sensor_id, value, timestamp in map(lambda r: r.split(','), data.split(';')):
 					reading_id = store_reading(sensor_id, value, timestamp)
 					stored_readings.append(reading_id)
-					return ApiObjects(stored_readings)
+				return ApiObjects(stored_readings)
 			except Exception:
 				return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value,timestamp;sensor_id,value,timestamp;" etc.'))
 		
@@ -330,7 +330,7 @@ class ReadingListResource(restful.Resource):
 					sensor_id, value, timestamp = reading.get('sensor_id'), reading.get('value'), reading.get('timestamp')
 					reading_id = store_reading(sensor_id, value, timestamp)
 					stored_readings.append(reading_id)
-					return ApiObjects(stored_readings)
+				return ApiObjects(stored_readings)
 			except Exception:
 				return jsonify(ApiError('Please submit data as a JSON list of dict, like this: "[{"timestamp":1451394155.4250559807,"sensor_id":1,"value":99.0}]"'))
 
