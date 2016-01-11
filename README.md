@@ -28,12 +28,17 @@ DELETE /sensor/<int:sensor_id> (auth required)
 POST /sensor (auth required, form params: 'node_id', 'sensortype_id')
 
 GET /sensortype/<int:sensortype_id>
+
 DELETE /sensortype/<int:sensortype_id> (auth required)
+
 POST /sensortype (auth required, form params: 'name', 'unit')
 
 GET /readings (query args: 'sensor_id')
+
 POST /readings (auth required, query args: 'format=compact|json', form params: 'readings')
 
 GET /reading/<int:reading_id>
+
 DELETE /reading/<int:reading_id> (auth required)
+
 POST /reading (auth required, form params: 'sensor_id', 'value', 'timestamp')
