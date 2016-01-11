@@ -11,8 +11,9 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(name)s:%(message)s')
 logging.getLogger().setLevel(logging.DEBUG)
 
 app = Flask(__name__)
-app.config.from_object('config')
+app.config.from_envvar('TECHRICE_CONFIG')
 
+print app.config
 from flask.ext.sqlalchemy import SQLAlchemy
 db = SQLAlchemy(app)
 
