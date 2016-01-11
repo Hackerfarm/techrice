@@ -5,6 +5,8 @@ import time
 from datetime import datetime, timedelta
 from termcolor import colored
 import sys
+# host = 'http://techrice.iotree.org/'
+# creds = ('master@hacker.farm', 'thegreatunix')
 host = 'http://localhost:8080/'
 creds = ('dalekk@gmail.com', 'password')
 

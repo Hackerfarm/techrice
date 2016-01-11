@@ -10,10 +10,6 @@ class NodeMarker(object):
 		assert isinstance(latitude, float), 'latitude must be a float'
 		self.longitude = longitude
 		self.latitude = latitude
-		
-		print infowindow
-		print type(infowindow)
-		# assert isinstance(infowindow, str), 'infowindow must be a string'
 		self.infowindow = Markup(infowindow)
 		self.uuid = uuid.uuid4().hex
 
@@ -38,7 +34,6 @@ def make_map(nodes):
 		longitude = node.longitude, 
 		latitude = node.latitude, 
 		infowindow = '{} (id {})'.format(node.name, node.id), 
-		# click_redirect = 'http://localhost:8080/chart/weekly/node/{}'.format(node.id)
 		click_redirect = '/chart/weekly/node/{}'.format(node.id)
 		) for node in nodes]
 	return Markup(render_template("gmap.html", markers = markers))

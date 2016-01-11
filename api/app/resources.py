@@ -98,7 +98,7 @@ class NodeResource(restful.Resource):
 		if not site:
 			return jsonify(ApiError('site {} not found'.format(args['site_id'])))
 
-		node = Node.create(site = args['site'], name = args['name'], longitude = args['longitude'], latitude = args['latitude'])
+		node = Node.create(site = site, name = args['name'], longitude = args['longitude'], latitude = args['latitude'])
 		if node:
 			return jsonify(ApiObjects(node.json()))
 		else:
@@ -188,7 +188,7 @@ class SensorResource(restful.Resource):
 		if not sensortype: 
 			return jsonify(ApiError('sensortype {} not found'.format(args['sensortype_id'])))
 
-		sensor = Sensor.create(node = args['node'], sensortype = args['sensortype'], name = args['name'])
+		sensor = Sensor.create(node = node, sensortype = sensortype, name = args['name'])
 		if sensor:
 			return jsonify(ApiObjects(sensor.json()))
 		else:

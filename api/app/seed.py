@@ -18,11 +18,11 @@ def loggeobrowngen(n = -1, offset = 50):
 
 
 def seed_site(sensors = 1, days = 7, interval_seconds = 3600):
-	site = Site.create(alias = 'seeded_site')
-	node = Node.create(alias = 'seeded_node', site = site, latitude = 35.146623 + random() / 100.0, longitude = 139.9835682 + random() / 100.0)
+	site = Site.create(name = 'seeded_site')
+	node = Node.create(name = 'seeded_node', site = site, latitude = 35.146623 + random() / 100.0, longitude = 139.9835682 + random() / 100.0)
 	sensortype = SensorType.create(name = 'HC SR-04', unit = 'cm')
 	for i in range(sensors):
-		sensor = Sensor.create(sensortype = sensortype, node = node, alias = 'water distance %s'%i)
+		sensor = Sensor.create(sensortype = sensortype, node = node, name = 'water distance %s'%i)
 		timestamp = datetime.utcnow() - timedelta(days = 7)
 		data = loggeobrowngen()
 		n_readings = 0
@@ -44,7 +44,7 @@ class FakeRealtimeSensor(Process):
 		if sensor: 
 			self.sensor = sensor
 		else:
-			self.sensor = Sensor.create(alias = 'started at %s'%datetime.utcnow().ctime())
+			self.sensor = Sensor.create(name = 'started at %s'%datetime.utcnow().ctime())
 			print '*********** Created new sensor'
 			print self.sensor
 
