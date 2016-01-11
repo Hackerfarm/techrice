@@ -42,8 +42,10 @@ class SiteResource(restful.Resource):
 
 	@http_auth_required
 	def post(self):
-		name = request.form.get('name', None)
-		site = Site.create(name = name)
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('name', type=str, location='form', required=True, help='<str> name required')
+		args = parser.parse_args()
+		site = Site.create(name = args['name'])
 		if site:
 			return jsonify(ApiObjects(site.json()))
 		else:
@@ -62,6 +64,7 @@ class SiteListResource(restful.Resource):
 		
 rest_api.add_resource(SiteListResource, '/sites')
 
+from flask_restful import reqparse
 
 
 class NodeResource(restful.Resource):
@@ -84,31 +87,18 @@ class NodeResource(restful.Resource):
 	
 	@http_auth_required
 	def post(self):
-		args = {}
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('site_id', type=int, location='form', required=True, help='<int> site_id required')
+		parser.add_argument('name', type=str, location='form', required=True, help='<str> name required')
+		parser.add_argument('longitude', type=float, location='form', required=True, help='<float> longitude required')
+		parser.add_argument('latitude', type=float, location='form', required=True, help='<float> latitude required')
+		args = parser.parse_args()
 		
-		args.update({'name' : request.form.get('name', None)})
-		args.update({'longitude' : request.form.get('longitude', None)})
-		args.update({'latitude' : request.form.get('latitude', None)})
+		site = Site.query.filter_by(id = args['site_id']).first()
+		if not site:
+			return jsonify(ApiError('site {} not found'.format(args['site_id'])))
 
-		site_id = request.form.get('site_id', None)
-		if site_id: 
-			site = Site.query.filter_by(id = site_id).first()
-			if site: 
-				args.update({'site' : site})
-			else: 
-				return jsonify(ApiError('site {} not found'.format(site_id)))
-		else: 
-			return jsonify(ApiError('missing query arg: site_id'))
-
-		nodetype_id = request.form.get('nodetype_id', None)
-		if nodetype_id: 
-			nodetype = NodeType.query.filter_by(id = nodetype_id).first()
-			if nodetype: 
-				args.update({'nodetype' : nodetype}) 
-			else: 
-				return jsonify(ApiError('nodetype {} not found'.format(nodetype_id)))
-		
-		node = Node.create(**args)
+		node = Node.create(site = args['site'], name = args['name'], longitude = args['longitude'], latitude = args['latitude'])
 		if node:
 			return jsonify(ApiObjects(node.json()))
 		else:
@@ -119,7 +109,11 @@ rest_api.add_resource(NodeResource, '/node/<int:node_id>', '/node')
 
 class NodeListResource(restful.Resource):
 	def get(self):		
-		site_id = request.args.get('site_id')
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('site_id', type=int, location='form', required=True, help='<int> site_id required')
+		args = parser.parse_args()
+
+		site_id = args['site_id']
 		if not site_id:
 			return jsonify(ApiError('missing query arg: site_id'))
 		nodes = Node.query.filter(Node.site_id == site_id).all()
@@ -150,13 +144,11 @@ class SensorTypeResource(restful.Resource):
 
 	@http_auth_required
 	def post(self):
-		name = request.form.get('name', None)
-		unit = request.form.get('unit', None)
-		if not name:
-			return jsonify(ApiError('missing form data: name'))
-		if not unit:
-			return jsonify(ApiError('missing form data: unit'))
-		sensortype = SensorType.create(name = name, unit = unit)
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('name', type=str, location='form', required=True, help='<str> name required')
+		parser.add_argument('unit', type=str, location='form', required=True, help='<str> unit required')
+		args = parser.parse_args()
+		sensortype = SensorType.create(name = args['name'], unit = args['unit'])
 		return jsonify(ApiObjects(sensortype.json()))	
 
 rest_api.add_resource(SensorTypeResource, '/sensortype/<int:sensortype_id>', '/sensortype')
@@ -182,31 +174,21 @@ class SensorResource(restful.Resource):
 	
 	@http_auth_required
 	def post(self):
-		args = {}
-		
-		node_id = request.form.get('node_id')
-		if node_id: 
-			node = Node.query.filter_by(id = node_id).first()
-			if node: 
-				args.update({'node' : node})
-			else: 
-				return jsonify(ApiError('node {} not found'.format(node_id)))
-		else: 
-			return jsonify(ApiError('missing form data: node_id'))
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('node_id', type=int, location='form', required=True, help='<int> node_id required')
+		parser.add_argument('sensortype_id', type=int, location='form', required=True, help='<int> sensortype_id required')
+		parser.add_argument('name', type=int, location='form', required=False, help='<int> sensortype_id optional')
+		args = parser.parse_args()
 
-		sensortype_id = request.form.get('sensortype_id')
-		if sensortype_id: 
-			sensortype = SensorType.query.filter_by(id = sensortype_id).first()
-			if sensortype: 
-				args.update({'sensortype' : sensortype})
-			else: 
-				return jsonify(ApiError('sensortype {} not found'.format(sensortype_id)))
-		else: 
-			return jsonify(ApiError('missing form data: sensortype_id'))
+		node = Node.query.filter_by(id = args['node_id']).first()
+		if not node: 
+			return jsonify(ApiError('node {} not found'.format(args['node_id'])))
 
-		args.update({'name': request.form.get('name')})
+		sensortype = SensorType.query.filter_by(id = args['sensortype_id']).first()
+		if not sensortype: 
+			return jsonify(ApiError('sensortype {} not found'.format(args['sensortype_id'])))
 
-		sensor = Sensor.create(**args)
+		sensor = Sensor.create(node = args['node'], sensortype = args['sensortype'], name = args['name'])
 		if sensor:
 			return jsonify(ApiObjects(sensor.json()))
 		else:
@@ -217,10 +199,11 @@ rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>', '/sensor')
 
 class SensorListResource(restful.Resource):
 	def get(self):
-		node_id = request.args.get('node_id')
-		if not node_id:
-			return jsonify(ApiError('missing query arg: node_id'))
-		sensors = Sensor.query.filter(Sensor.node_id == node_id).all()
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('node_id', type=int, required=True, help='<int> node_id required')
+		args = parser.parse_args()
+		
+		sensors = Sensor.query.filter(Sensor.node_id == args['node_id']).all()
 		if sensors:
 			return jsonify(ApiObjects([sensor.json() for sensor in sensors]))
 		else: 
@@ -271,19 +254,18 @@ class ReadingResource(restful.Resource):
 
 	@http_auth_required
 	def post(self):
-		sensor_id = request.form.get('sensor_id')
-		value = request.form.get('value')
-		timestamp = request.form.get('timestamp')
+		parser = reqparse.RequestParser(bundle_errors = True)
+		parser.add_argument('sensor_id', type=int, location='form', required=True, help='<int> sensor_id required')
+		parser.add_argument('value', type=float, location='form', required=True, help='<float> value required')
+		parser.add_argument('timestamp', type=float, location='form', required=True, help='<float> epoch timestamp required')
+		args = parser.parse_args()
+
+		sensor = Sensor.query.filter_by(id = args['sensor_id']).first()
+		if not sensor:
+			return jsonify(ApiError('sensor {} not found'.format(args['sensor_id'])))
 		
-		if not value: 
-			return jsonify(ApiError('missing value'))
-		if not timestamp: 
-			return jsonify(ApiError('missing timestamp'))
-		if not sensor_id: 
-			return jsonify(ApiError('missing sensor_id'))
-		else:
-			reading_id = store_reading(sensor_id, value, timestamp)
-			return ApiObjects(reading_id)
+		reading = Reading.create(sensor = sensor, value = args['value'], timestamp = args['timestamp'])
+		return jsonify(ApiObjects(reading.json()))
 
 
 rest_api.add_resource(ReadingResource, '/reading/<int:reading_id>', '/reading')
