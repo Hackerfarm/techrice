@@ -110,13 +110,10 @@ rest_api.add_resource(NodeResource, '/node/<int:node_id>', '/node')
 class NodeListResource(restful.Resource):
 	def get(self):		
 		parser = reqparse.RequestParser(bundle_errors = True)
-		parser.add_argument('site_id', type=int, location='form', required=True, help='<int> site_id required')
+		parser.add_argument('site_id', type=int, required=True, help='<int> site_id required')
 		args = parser.parse_args()
-
-		site_id = args['site_id']
-		if not site_id:
-			return jsonify(ApiError('missing query arg: site_id'))
-		nodes = Node.query.filter(Node.site_id == site_id).all()
+		
+		nodes = Node.query.filter(Node.site_id == args['site_id']).all()
 		if nodes:
 			return jsonify({'objects': [node.json() for node in nodes]})
 		else:
@@ -263,7 +260,7 @@ class ReadingListResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
-	# @http_auth_required
+	@http_auth_required
 	def post(self):
 		parser = reqparse.RequestParser(bundle_errors = True)		
 		parser.add_argument('format', type=str, required = True, choices = ['json', 'compact'], help='<str> data format [json|compact]')
