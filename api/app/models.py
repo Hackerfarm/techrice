@@ -123,7 +123,7 @@ class SensorType(ExtendedBase, db.Model):
 	__tablename__ = 'sensortypes'
 
 	id = db.Column(db.Integer, primary_key = True)
-	name = db.Column(db.String())
+	name = db.Column(db.String(), unique = True)
 	unit = db.Column(db.String())
 	
 	sensors = db.relationship('Sensor', backref = db.backref('sensortype'))
