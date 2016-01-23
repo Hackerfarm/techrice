@@ -1,4 +1,4 @@
-
+// #include <map>
 #include "sensors.h"
 #include <chibi.h>
 #include <utilsawesome.h>
@@ -34,8 +34,11 @@ void read_battery_voltage(unsigned char *buffer, int battery_voltage_pin, float 
 
 
 
-DHT_V12_Sensor::DHT_V12_Sensor(unsigned int sensor_id, unsigned char signal_pin):BaseSensor(sensor_id){
-	this->sensor = new dht();
+DHT_V12_Sensor::DHT_V12_Sensor(unsigned int temp_id, unsigned int hum_id, unsigned char signal_pin):BaseSensor(sensor_id){
+	this->measurements = new std::map<int,double>;
+  this->sensor = new dht();
+  this->temp_id = temp_id;
+  this->hum_id = hum_id;
 }
 
 double DHT_V12_Sensor::read(unsigned char *buffer){
@@ -53,6 +56,12 @@ double DHT_V12_Sensor::read(unsigned char *buffer){
     // append_reading_to_buffer(buffer, hum);
   // }
   return 2.1;
+}
+
+std::map<int,double> DHT_V12_Sensor::read(){
+  std::map<int,double> measurements;
+  measurements[this->temp_id] = 2.3;
+  return measurements;
 }
 
 

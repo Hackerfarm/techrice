@@ -1,3 +1,4 @@
+#include <map>
 #include <NewPing.h>
 
 class BaseSensor{
@@ -25,9 +26,13 @@ class Paralax28015REVC_Sensor:public BaseSensor{
 class DHT_V12_Sensor:public BaseSensor{
 	private:
 		dht *sensor;
+		std::map<int,double> *measurements;
+		int temp_id;
+		int hum_id;
 	public:
-		DHT_V12_Sensor(unsigned int sensor_id, unsigned char signal_pin);
+		DHT_V12_Sensor(unsigned int temp_id, unsigned int hum_id, unsigned char signal_pin);
 		double read(unsigned char *buffer);
+		std::map<int,double> read();
 };
 
 
