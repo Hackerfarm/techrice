@@ -33,6 +33,40 @@ def seed_site(sensors = 1, days = 7, interval_seconds = 3600):
 		data.close()
 	return {'site': site, 'node': node}
 
+from uuid import uuid4
+
+from app import db
+from sqlalchemy.exc import IntegrityError
+
+def seed_techrice_nodetypes():
+	try:
+		SensorType.create(name = 'battery voltage', unit = 'mV')
+		SensorType.create(name = 'solar voltage', unit = 'mV')
+		SensorType.create(name = 'DHT11 temperature', unit = 'C')
+		SensorType.create(name = 'DHT11 humidity', unit = '%')
+		SensorType.create(name = 'sonar HC SR-04', unit = 'cm')
+	except IntegrityError:
+		db.session.rollback()
+		return 'Seems like the sensortypes have already been created. Session has been rolled back'
+
+def seed_techrice_node(site_id = None):
+	if not site_id:
+		site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
+	node = Node.create(name = 'Techrice node {}'.format(uuid4().hex), site = site)
+	
+
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+	return {'node': 'name: {}, id: {}'.format(node.name, node.id), 'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors)}
+
+	# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
+	# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()
+	# dht11_humidity_sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first()
+	# sonar_sensortype = SensorType.query.filter_by(name = 'HC SR-04').first()
+
 
 from multiprocessing import Process
 class FakeRealtimeSensor(Process):
