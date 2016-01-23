@@ -28,11 +28,14 @@ typedef struct{
   int32_t count;
   int32_t signal_strength;
   char timestamp[19];
+  int32_t node_id;
 } techrice_packet_t;
 
 /*
 These values will be provided by the API
 */
+#define NODE_ID 1
+#define EDGE_ID 3
 #define TEMPERATURE_SENSOR_ID 1
 #define HUMIDITY_SENSOR_ID 99
 #define BATTERY_SENSOR_ID 98
@@ -42,7 +45,11 @@ techrice_packet_t r = {
   {TEMPERATURE_SENSOR_ID,0}, 
   {HUMIDITY_SENSOR_ID,0},
   {BATTERY_SENSOR_ID,0}, 
-  {SOLAR_SENSOR_ID,0} 
+  {SOLAR_SENSOR_ID,0},
+  0,
+  0,
+  "",
+  NODE_ID
 };
 
 
@@ -136,7 +143,10 @@ void setup()
   printf(TITLE);
   printf("Datecode: %s\n", DATECODE);
 
+  chibiSetShortAddr(NODE_ID);
 
+  Serial.print("NODE_ID: ");
+  Serial.println(r.node_id);
   /*
   // check for SD and init
   sdDetect = digitalRead(sdDetectPin);
@@ -191,31 +201,17 @@ void loop()
   static int count = 0;
   
   // This function checks the command line to see if anything new was typed.
-  chibiCmdPoll();
+//  chibiCmdPoll();
 
-  int addr = 3;
-  byte data[16];
-//  techrice_packet_t packet;
-//  get_temp(packet.humidity, packet.temperature);
-  
-  // The first data returned by the sensor seems wrong
-  
-//  get_temp(temperature.value, humidity.value);
-//  temperature.count++;
-//  humidity.count++;
   get_temp(r.temperature.value, r.humidity.value);
   get_vbat(r.battery.value);
   get_vsol(r.solar.value);
   r.count++;
   get_timestamp(r.timestamp);
-//  r.timestamp = millis();
-
-//  char b[sizeof(r)];
-//  memcpy(b, &r, sizeof(r));
-//  Serial.println(b);
 
   char sbuf[200];
-  sprintf(sbuf, "Count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar),", 
+  sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar),", 
+                (int) r.node_id,
                 (int) r.count, 
                 (int) r.timestamp,
                 (int) r.temperature.sensor_id, (int) r.temperature.value,
@@ -225,32 +221,10 @@ void loop()
   Serial.println(sbuf);
 //  char hum[19];
 //  get_timestamp(hum);
-  chibiTx(addr, (unsigned char*)(&r), sizeof(r));
+  chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
   delay(10000);
   delay(10000);
 //  delay(10000);
-//  chibiTx(addr, (unsigned char*)(&humidity), sizeof(humidity));
-//  get_vbat(battery.value);
-//  get_vsol(solar.value); 
- 
-//  get_temp(packet.temperature, packet.humidity);
-//  get_vbat(packet.battery);
-//  get_vsol(packet.solar);
-//  packet.count = count;
-//  
-//  chibiTx(addr, (unsigned char*)(&packet), sizeof(packet));
-//  //cmdSleepMcu(0,0);
-//  char sbuf[200];
-//  sprintf(sbuf, "Sent packet #%d with following data: \nTemperature: %d\nHumidity: %d\nBattery (mV): %d\nSolar (mV): %d\nSignal: %d\n\n", 
-//                count, 
-//                (int)(packet.temperature), 
-//                (int)(packet.humidity), 
-//                (int)(packet.battery),
-//                (int)(packet.solar),
-//                (int)(packet.signal_strength));
-//  Serial.print(sbuf);
-//  Serial.println((char*) r);
-//  count++;
   
   // Check if any data was received from the radio. If so, then handle it.
  /* if (chibiDataRcvd() == true)

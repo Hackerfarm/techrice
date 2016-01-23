@@ -20,6 +20,8 @@
 //#include "TimerOne.h"
 #define RX_BUFSIZE 300
 
+#define NODE_ID 3
+
 unsigned char buf[RX_BUFSIZE];
 int len;
 int dupe_cnt = 0;
@@ -64,7 +66,12 @@ typedef struct{
   int32_t count;
   int32_t signal_strength;
   char timestamp[19];
+  int32_t node_id;
 } techrice_packet_t;
+
+
+
+
 
 int lastConnection = millis();
 void setup() {
@@ -84,15 +91,11 @@ void setup() {
   
   Serial.println("Init chibi stack");
   chibiInit();
-  chibiSetShortAddr(0x03);
+  chibiSetShortAddr(NODE_ID);
   Serial.println("Init chibi stack complete");
 
   // give the Ethernet shield a second to initialize:
   delay(1000);
-//  Serial.println("connecting...");
-//
-  adv_post();
-  delay(2000);
   Serial.println("Started");
 }
 
@@ -100,14 +103,7 @@ void setup() {
 
 void loop()
 {
-  
-  int mil = millis();
-  
-//  if((mil % 10000 > 0) & (mil % 10000 < 10)){
-//    Serial.println("TICK");
-//    simple_post();
-//  }
-  
+    
   if (chibiDataRcvd() == true)
   { 
     int rssi, src_addr;
@@ -120,49 +116,28 @@ void loop()
     Serial.println(len);
     if (len)
     {
+      Serial.println("1");
       techrice_packet_t p = *((techrice_packet_t*)(buf));
-//      Serial.println((char*)buf);
-//      char sbuf[200];
-//      sprintf(sbuf, "Count: %d, timestamp: %s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar),", 
-//                (int) p.count, 
-//                (int) p.timestamp,
-//                (int) p.temperature.sensor_id, (int) p.temperature.value,
-//                (int) p.humidity.sensor_id, (int) p.humidity.value,
-//                (int) p.battery.sensor_id, (int) p.battery.value,
-//                (int) p.solar.sensor_id, (int) p.solar.value);
-//      Serial.println(sbuf);
-//      free(sbuf);
-      char http_body[200];
-      sprintf(http_body, "readings=%d,%d;%d,%d;%d,%d;%d,%d;",
+      Serial.println("2");
+      p.signal_strength = rssi;
+      Serial.println("3");
+      char http_body[300];
+      Serial.println("4");
+      sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d&timestamp=%s&node_id=%s,rssi=%d",
                 (int) p.temperature.sensor_id, (int) p.temperature.value,
                 (int) p.humidity.sensor_id, (int) p.humidity.value,
                 (int) p.battery.sensor_id, (int) p.battery.value,
-                (int) p.solar.sensor_id, (int) p.solar.value);
+                (int) p.solar.sensor_id, (int) p.solar.value,
+                p.timestamp,
+                p.node_id,
+                p.signal_strength);
+      Serial.println("5");
       api_post(http_body);
-      Serial.println("HTTP_BODY");
-      Serial.println(http_body);
-      Serial.println(strlen(http_body));
-//      char request[1000];
-//      sprintf(request, "POST /newtest HTTP/1.1\n\tHost: techrice.iotree.org\n\tUser-Agent: arduino-ethernet-home\n\tContent-Type: application/x-www-form-urlencoded\n\tConnection: close\n\tContent-length: %d\n\tformat=compact&data=1", 21);  
-//      sprintf(request, "GET /newtest HTTP/1.1\n\tHost: techrice.iotree.org\n\tAccept: */*\r\n\tConnection: close\n\t");  
-//      if (client.connect(server, 80)) {
-//        Serial.println("Sending request:");
-//        Serial.println(request);
-////        client.print(request); 
-//      } 
-//      else {
-//        // if you couldn't make a connection:
-//        Serial.println("connection failed, disconnecting");
-//        client.stop();
-//      } 
+      Serial.println("10");
     }
   }
   
   
-  
-//  
-  // if there are incoming bytes available
-  // from the server, read them and print them:
   if (client.available()) {
     char c = client.read();
     Serial.print(c);
@@ -173,29 +148,14 @@ void loop()
 
 void api_post(char *http_body){
   
-//  char http_body[] = "readings=";
-//  char data[] = "1,23.5,1453202011.48";
-//  char request[500];
-//  Serial.print("LENGTH: ");
-//  int i = strlen((char*) buf);
-//  Serial.println(i);
-  Serial.println("IN FUNCTION");
-  Serial.println(http_body);
-  Serial.println(strlen(http_body));
-  char http_header[300];
+  char http_header[400];
   sprintf(http_header, "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: %d\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
   strcat(http_header, http_body);
-//  Serial.println(http_header);
-//  strcat(http_header, http_body);
   Serial.println("WHOLE REQUEST");
   Serial.println(http_header);
   client.stop();
   if (client.connect(server, 80)) {
-    Serial.println("connected");
-    // Make a HTTP request:
-    
     client.print(http_header);
-//    client.print(buf);
   }
   else {
     // kf you didn't get a connection to the server:
