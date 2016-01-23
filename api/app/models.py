@@ -74,7 +74,7 @@ class Site(ExtendedBase, db.Model):
 		return {'id': self.id, 
 				'name': self.name, 
 				'nodes': map(lambda n: n.id, self.nodes),
-				'type' : Site.__resource_type__,
+				'type' : 'site',
 				'created':float(self.created.strftime("%s.%f")),
 				'updated':float(self.updated.strftime("%s.%f"))
 				}
@@ -101,7 +101,7 @@ class Node(ExtendedBase, db.Model):
 				'latitude': self.latitude, 
 				'site_id': self.site_id, 
 				'sensors': map(lambda s: s.id, self.sensors),
-				'type': Node.__resource_type__,
+				'type': 'node',
 				'nodetype_id':self.nodetype_id,
 				'created':float(self.created.strftime("%s.%f")),
 				'updated':float(self.updated.strftime("%s.%f"))
@@ -116,7 +116,7 @@ class NodeType(ExtendedBase, db.Model):
 	nodes = db.relationship( 'Node', backref = db.backref('nodetype'))
 
 	def json(self):
-		return {'id': self.id, 'name': self.name, 'nodes': map(lambda n: n.id, self.nodes)}
+		return {'id': self.id, 'type': 'nodetype', 'name': self.name, 'nodes': map(lambda n: n.id, self.nodes)}
 
 
 class SensorType(ExtendedBase, db.Model):
@@ -129,7 +129,7 @@ class SensorType(ExtendedBase, db.Model):
 	sensors = db.relationship('Sensor', backref = db.backref('sensortype'))
 
 	def json(self):
-		return {'id': self.id, 'name': self.name, 'unit': self.unit, 'sensors': map(lambda s: s.id, self.sensors)}
+		return {'id': self.id, 'type': 'sensortype', 'name': self.name, 'unit': self.unit, 'sensors': map(lambda s: s.id, self.sensors)}
 
 
 class Sensor(ExtendedBase, db.Model):
@@ -143,7 +143,7 @@ class Sensor(ExtendedBase, db.Model):
 	sensortype_id = db.Column(db.Integer, db.ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
 		
 	def json(self):
-		return {'id': self.id, 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
+		return {'id': self.id, 'type': 'sensor', 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
 
 
 class Reading(ExtendedBase, db.Model):
@@ -163,7 +163,7 @@ class Reading(ExtendedBase, db.Model):
 			self.timestamp = datetime.fromtimestamp(timestamp)
 
 	def json(self):
-		return {'id': self.id, 'sensor_id': self.sensor_id, 'value': self.value, 'timestamp': str(self.timestamp), 'created': str(self.created), 'updated': str(self.updated)}
+		return {'id': self.id, 'type': 'reading', 'sensor_id': self.sensor_id, 'value': self.value, 'timestamp': str(self.timestamp), 'created': str(self.created), 'updated': str(self.updated)}
 
 
 
