@@ -22,7 +22,7 @@ def get_chart_settings():
 
 
 from nvd3 import lineChart
-@app.route('/chart/weekly/sensor/<int:sensor_id>')
+@app.route('/chart/sensor/<int:sensor_id>')
 def sensor_weekly_chart(sensor_id):
 	end_datetime = datetime.utcnow() + timedelta(hours = 9)
 	start_datetime = end_datetime - timedelta(days = 7) + timedelta(hours = 9)
@@ -38,7 +38,7 @@ def sensor_weekly_chart(sensor_id):
 	chart.buildhtml()
 	return chart.htmlcontent
 
-@app.route('/chart/weekly/node/<int:node_id>')
+@app.route('/chart/node/<int:node_id>')
 def node_weekly_chart(node_id):
 	end_datetime = datetime.utcnow() + timedelta(hours = 9)
 	start_datetime = end_datetime - timedelta(days = 7) + timedelta(hours = 9)
