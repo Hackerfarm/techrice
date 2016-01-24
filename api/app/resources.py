@@ -260,11 +260,12 @@ class ReadingListResource(restful.Resource):
 		else:
 			return jsonify(ApiObjects())
 
+	@http_auth_required
 	def post(self):
 		parser = reqparse.RequestParser(bundle_errors = True)		
 		parser.add_argument('format', type=str, required = True, choices = ['json', 'compact'], help='<str> data format [json|compact]')
 		parser.add_argument('readings', type=str, location = 'form', required = True, help='<str> multiple readings')
-		parser.add_argument('node_id', type=int, location = 'form', required = True, help='<int> node_id required')
+		# parser.add_argument('node_id', type=int, location = 'form', required = True, help='<int> node_id required')
 		parser.add_argument('timestamp', type=str, location = 'form', required = True, help='<str> timestamp required. Format: %Y-%m-%d %H:%M:%S')
 		args = parser.parse_args()
 		stored_readings = list()
@@ -283,9 +284,9 @@ class ReadingListResource(restful.Resource):
 			except Exception:
 				return jsonify(ApiError('Could not store data. Please submit data in the format "sensor_id,value;sensor_id,value;..."'))	
 
-			node = Node.query.filter_by(id = args['node_id']).first()
-			if not node:
-				return jsonify(ApiError('no such node: {}'.format(args['node_id'])))
+			# node = Node.query.filter_by(id = args['node_id']).first()
+			# if not node:
+			# 	return jsonify(ApiError('no such node: {}'.format(args['node_id'])))
 
 			for sensor_id, value in unpacked:
 				try:
