@@ -10,7 +10,7 @@ import sqlalchemy
 from datetime import datetime
 
 from flask.ext.security import login_required, http_auth_required
-
+from flask_restful import reqparse
 
 
 class ApiError(dict):
@@ -64,7 +64,7 @@ class SiteListResource(restful.Resource):
 		
 rest_api.add_resource(SiteListResource, '/sites')
 
-from flask_restful import reqparse
+
 
 
 class NodeResource(restful.Resource):

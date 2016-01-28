@@ -50,8 +50,10 @@ def seed_techrice_nodetypes():
 		return 'Seems like the sensortypes have already been created. Session has been rolled back'
 
 def seed_techrice_node(site_id = None):
-	if not site_id:
+	if site_id:
 		site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
+	else:
+		site = Site.query.filter_by(id = site_id)
 	node = Node.create(name = 'Techrice node {}'.format(uuid4().hex), site = site)
 	
 
