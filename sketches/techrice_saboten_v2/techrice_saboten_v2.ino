@@ -36,10 +36,11 @@ These values will be provided by the API
 */
 #define NODE_ID 1
 #define EDGE_ID 3
-#define TEMPERATURE_SENSOR_ID 1
-#define HUMIDITY_SENSOR_ID 99
-#define BATTERY_SENSOR_ID 98
-#define SOLAR_SENSOR_ID 97
+#define TEMPERATURE_SENSOR_ID 3
+#define HUMIDITY_SENSOR_ID 4
+#define BATTERY_SENSOR_ID 2
+#define SOLAR_SENSOR_ID 1
+#define SONAR_SENSOR_ID 5
 
 techrice_packet_t r = {
   {TEMPERATURE_SENSOR_ID,0}, 
@@ -120,7 +121,7 @@ void setup()
   
   // set up LED
   pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, HIGH);
+  digitalWrite(ledPin, LOW);
   //delay(300);
   //digitalWrite(ledPin, LOW);
   
@@ -128,8 +129,8 @@ void setup()
   chibiCmdInit(57600);
   
 
-  //pcf.enableMinuteInterrupt();
-  pcf.enableSecondInterrupt();
+  pcf.enableMinuteInterrupt();
+//  pcf.enableSecondInterrupt();
   pcf.setInterruptToPulse();
   attachInterrupt(2, rtcInterrupt, FALLING);
   
@@ -142,6 +143,9 @@ void setup()
   // datecode version
   printf(TITLE);
   printf("Datecode: %s\n", DATECODE);
+
+  pcf.writeDate(16, 1, 24, 6);
+  pcf.writeTime(13, 8, 0);
 
   chibiSetShortAddr(NODE_ID);
 
@@ -191,6 +195,8 @@ void setup()
   
   // high gain mode
   digitalWrite(hgmPin, HIGH);
+
+  
 }
 
 /**************************************************************************/
@@ -222,9 +228,16 @@ void loop()
 //  char hum[19];
 //  get_timestamp(hum);
   chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
-  delay(10000);
-  delay(10000);
 //  delay(10000);
+//  for(int i=0; i<10; i++){
+//    digitalWrite(ledPin, HIGH);
+//    delay(500);
+//    digitalWrite(ledPin, LOW);
+//    delay(500);  
+//    }
+  
+  sleep_mcu();
+
   
   // Check if any data was received from the radio. If so, then handle it.
  /* if (chibiDataRcvd() == true)
@@ -265,6 +278,56 @@ void loop()
   }*/
 }
 
+void rtcInterrupt(){
+  Serial.println("Interrupt");
+  detachInterrupt(2);
+// for(int i=0; i<10; i++){
+//    digitalWrite(ledPin, HIGH);
+//    delay(200);
+//    digitalWrite(ledPin, LOW);
+//    delay(200);  
+//    }
+}
+
+void sleep_radio(){
+  digitalWrite(hgmPin, LOW);
+  // set up chibi regs to turn off external P/A
+  chibiRegWrite(0x4, 0x20);
+  chibiSleepRadio(1);  
+}
+
+void wakeup_radio(){
+  chibiSleepRadio(0);
+  digitalWrite(hgmPin, HIGH);
+  // set up chibi regs to turn on external P/A
+  chibiRegWrite(0x4, 0xA0);
+  
+  
+}
+
+void sleep_mcu(){
+  attachInterrupt(2, rtcInterrupt, FALLING);
+  delay(100);
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_radio();
+  sleep_enable();        // setting up for sleep ...
+  
+  ADCSRA &= ~(1 << ADEN);    // Disable ADC
+  Serial.println("Going to sleep");
+  delay(100);
+  digitalWrite(ledPin, LOW);
+  sleep_mode();
+
+  sleep_disable();
+  Serial.println("Awake");
+  digitalWrite(ledPin, HIGH);
+  wakeup_radio();
+  ADCSRA |= (1 << ADEN); // Enable ADC
+}
+
+
+
 void get_timestamp(char tbuf[19])
 {
   uint8_t hours, minutes, seconds;
@@ -278,6 +341,21 @@ void get_timestamp(char tbuf[19])
   Serial.println(tbuf);
 //  Serial.println("Year: %d, Month: %d, Day: %d, Weekday: %d Hours: %d, Minutes: %d, Seconds: %d\n", year, month, day, weekday, hours, minutes, seconds);
 }
+
+void init_datetime(int arg_cnt, char **args)
+{
+  uint8_t year, month, day, weekday;
+  
+  year = chibiCmdStr2Num(args[1], 10);
+  month = chibiCmdStr2Num(args[2], 10);
+  day = chibiCmdStr2Num(args[3], 10);
+  weekday = chibiCmdStr2Num(args[4], 10);
+  pcf.writeDate(2016, 1, 24, 6);
+  
+  pcf.readDate(&year, &month, &day, &weekday);
+  printf("Year: %d, Month: %d, Day: %d, Weekday: %d\n", year, month, day, weekday);
+}
+
 
 
 /**************************************************************************/
@@ -700,9 +778,4 @@ static int uart_putchar (char c, FILE *stream)
 }
 
 
-void rtcInterrupt()
-{
-  detachInterrupt(2);
-  //sleep_disable();
-}
 

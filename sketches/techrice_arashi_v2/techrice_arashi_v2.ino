@@ -31,7 +31,7 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 char server[] = "iotree.org";    // name address for Google (using DNS)
 //char httpHeader[] = "GET /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nConnection: close\r\nAccept: */*\r\nUser-Agent: python-requests/2.9.1\r\n\r\n";
-char httpHeader[] = "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: 33\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nreadings=1%2C23.5%2C1453202011.48";
+char httpHeader[] = "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: 33\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nreadings=1%2C23.5%2C1453202011.48";
 
 //char httpHeader[500];
 //sprintf(httpHeader, "ej%d", 5);
@@ -149,7 +149,7 @@ void loop()
 void api_post(char *http_body){
   
   char http_header[400];
-  sprintf(http_header, "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: %d\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
+  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: techrice.iotree.org\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
   strcat(http_header, http_body);
   Serial.println("WHOLE REQUEST");
   Serial.println(http_header);
