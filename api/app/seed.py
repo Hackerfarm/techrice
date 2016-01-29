@@ -49,12 +49,15 @@ def seed_techrice_nodetypes():
 		db.session.rollback()
 		return 'Seems like the sensortypes have already been created. Session has been rolled back'
 
-def seed_techrice_node(site_id = None):
+def seed_techrice_node(site_id = None, alias = None, latitude = None, longitude = None):
 	if site_id:
 		site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
 	else:
 		site = Site.query.filter_by(id = site_id)
-	node = Node.create(name = 'Techrice node {}'.format(uuid4().hex), site = site)
+	
+	if not alias: 
+		alias = 'Techrice node {}'.format(uuid4().hex)
+	node = Node.create(name = alias, site = site, latitude = latitude, longitude = longitude)
 	
 
 	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
@@ -62,7 +65,10 @@ def seed_techrice_node(site_id = None):
 	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
 	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
 	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
-	return {'node': 'name: {}, id: {}'.format(node.name, node.id), 'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors)}
+	return {
+		'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
+		'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors)
+		}
 
 	# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
 	# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()

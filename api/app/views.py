@@ -21,10 +21,11 @@ import seed
 from flask_restful import reqparse
 
 @app.route('/seed/node/techrice', methods = ['POST'])
-# @http_auth_required
+@http_auth_required
 def seed_techrice_node():
-	print 'aASDAD'
 	parser = reqparse.RequestParser(bundle_errors = True)
 	parser.add_argument('site_id', type=str, required=False, help='<str> site_id required. If site exists, please create one by HTTP POST /site')
+	parser.add_argument('longitude', type=float, required=False, help='<float> node longitude')
+	parser.add_argument('latitude', type=float, required=False, help='<float> node latitude')
 	args = parser.parse_args()
-	return jsonify(seed.seed_techrice_node(site_id = args['site_id']))
+	return jsonify(seed.seed_techrice_node(**args))
