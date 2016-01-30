@@ -25,11 +25,10 @@ unsigned char old[100];
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-char server[] = "iotree.org";    // name address for Google (using DNS)
+char server[] = "www.google.co.jp";    // name address for Google (using DNS)
 
 // Set the static IP address to use if the DHCP fails to assign
-IPAddress ip(192, 168, 1, 178);
-//IPAddress ip(128, 199, 149, 82);
+IPAddress ip(192, 168, 1, 177);
 
 // Initialize the Ethernet client library
 // with the IP address and port of the server
@@ -42,13 +41,7 @@ void setup() {
   
   Serial.println("Starting...");
   
-//  Ethernet.begin(mac, ip);
-  if (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP");
-    // no point in carrying on, so do nothing forevermore:
-    // try to congifure using IP address instead of DHCP:
-    Ethernet.begin(mac, ip);
-  }
+  Ethernet.begin(mac, ip);
   chibiInit();
   chibiSetShortAddr(0x03);
 
@@ -60,8 +53,8 @@ void setup() {
   if (client.connect(server, 80)) {
     Serial.println("connected");
     // Make a HTTP request:
-    client.println("GET /nodes HTTP/1.1");
-    client.println("Host: techrice.iotree.org");
+    client.println("GET /search?q=arduino HTTP/1.1");
+    client.println("Host: www.google.co.jp");
     client.println("Connection: close");
     client.println();
   }
