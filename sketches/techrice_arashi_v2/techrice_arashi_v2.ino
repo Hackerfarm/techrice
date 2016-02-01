@@ -30,12 +30,6 @@ unsigned char old[100];
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 char server[] = "iotree.org";    // name address for Google (using DNS)
-//char httpHeader[] = "GET /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nConnection: close\r\nAccept: */*\r\nUser-Agent: python-requests/2.9.1\r\n\r\n";
-char httpHeader[] = "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: 33\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nreadings=1%2C23.5%2C1453202011.48";
-
-//char httpHeader[500];
-//sprintf(httpHeader, "ej%d", 5);
-//String httpHeader = "GET /posttest HTTP/1.1\r\n" +"Host: techrice.iotree.org\r\nContent-Length: 33\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nUser-Agent: python-requests/2.9.1\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nreadings=1%2C23.5%2C1453202011.48";
 
 // Set the static IP address to use if the DHCP fails to assign
 IPAddress ip(192, 168, 1, random(100,200));
@@ -86,7 +80,7 @@ void setup() {
     Serial.println("Failed to configure Ethernet using DHCP");
     // no point in carrying on, so do nothing forevermore:
     // try to congifure using IP address instead of DHCP:
-//    Ethernet.begin(mac, ip);
+    Ethernet.begin(mac, ip);
   }
   
   Serial.println("Init chibi stack");
@@ -103,7 +97,7 @@ void setup() {
 
 void loop()
 {
-    
+  Ethernet.maintain();
   if (chibiDataRcvd() == true)
   { 
     int rssi, src_addr;
@@ -116,13 +110,9 @@ void loop()
     Serial.println(len);
     if (len)
     {
-      Serial.println("1");
       techrice_packet_t p = *((techrice_packet_t*)(buf));
-      Serial.println("2");
       p.signal_strength = rssi;
-      Serial.println("3");
       char http_body[300];
-      Serial.println("4");
       sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d&timestamp=%s&node_id=%s,rssi=%d",
                 (int) p.temperature.sensor_id, (int) p.temperature.value,
                 (int) p.humidity.sensor_id, (int) p.humidity.value,
@@ -131,9 +121,7 @@ void loop()
                 p.timestamp,
                 p.node_id,
                 p.signal_strength);
-      Serial.println("5");
       api_post(http_body);
-      Serial.println("10");
     }
   }
   
@@ -161,55 +149,22 @@ void api_post(char *http_body){
     // kf you didn't get a connection to the server:
     Serial.println("connection failed");
   }
-
 }
 
-
-
-
-void simple_post(){
-  client.stop();
-//  while(!client.connect(server, 80)){
-//    Serial.println("")
+//void reconnect(int max_retries){
+//  int retries = 0;
+//  client.stop();
+//  while(retries < max_retries){
+//    if (client.connect(server, 80)) {
+//      client.print(http_header);
+//    }
+//  else {
+//    // kf you didn't get a connection to the server:
+//    Serial.println("connection failed");
+//  }  
 //  }
-  if (client.connect(server, 80)) {
-    Serial.println("connected");
-    // Make a HTTP request:
-    client.print(httpHeader);
-//    client.println("GET /nodes HTTP/1.1");
-//    client.println("Host: techrice.iotree.org");
-//    client.println("Connection: close");
-//    client.println();
-  }
-  else {
-    // kf you didn't get a connection to the server:
-    Serial.println("connection failed");
-  }
-}
+  
+  
+  
 
-void adv_post(){
-  char http_body[] = "readings";
-  char data[] = "1,23.5,1453202011.48";
-  char http_header[200];
-  sprintf(http_header, "POST /posttest HTTP/1.1\r\nHost: techrice.iotree.org\r\nContent-Length: %d\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
-  strcat(http_header, http_body);
-  client.stop();
-
-//  Serial.println("Stopped client.");
-//  while(!client.connect(server, 80)){
-//    Serial.println("")
-//  }
-  if (client.connect(server, 80)) {
-    Serial.println("connected");
-    // Make a HTTP request:
-    
-    client.print(httpHeader);
-    client.print(data);
-  }
-  else {
-    // kf you didn't get a connection to the server:
-    Serial.println("connection failed");
-  }
-
-}
 
