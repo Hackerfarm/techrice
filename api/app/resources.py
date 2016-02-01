@@ -264,18 +264,18 @@ class ReadingListResource(restful.Resource):
 	def post(self):
 		parser = reqparse.RequestParser(bundle_errors = True)		
 		parser.add_argument('format', type=str, required = True, choices = ['json', 'compact'], help='<str> data format [json|compact]')
-		parser.add_argument('readings', type=str, location = 'form', required = True, help='<str> multiple readings')
-		# parser.add_argument('node_id', type=int, location = 'form', required = True, help='<int> node_id required')
-		parser.add_argument('timestamp', type=str, location = 'form', required = True, help='<str> timestamp required. Format: %Y-%m-%d %H:%M:%S')
+		parser.add_argument('readings', type=str, required = True, help='<str> multiple readings')
+		parser.add_argument('node_id', type=int, help='<int> node_id required')
+		parser.add_argument('timestamp', type=str, location = 'form', required = False, help='<str> timestamp required. Format: %Y-%m-%d %H:%M:%S')
 		args = parser.parse_args()
 		stored_readings = list()
-		
 		if args['format'] == 'compact':
 			try:
 				timestamp = '20' + args['timestamp']	
 				timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
 			except (ValueError, TypeError):
-				return jsonify(ApiError('could not parse timestamp: {}'.format(args['timestamp'])))
+				timestamp = datetime.utcnow()
+				#return jsonify(ApiError('could not parse timestamp: {}'.format(args['timestamp'])))
 
 			try:
 				readings = args['readings'].split(';')

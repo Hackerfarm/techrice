@@ -16,6 +16,10 @@ def unauthorized():
 def posttest():
 	return str(request.form)
 
+@app.route('/testtest', methods = ['GET', 'POST'])
+def testtest():
+	return str(request.form)
+
 from flask.ext.security import http_auth_required
 import seed
 from flask_restful import reqparse

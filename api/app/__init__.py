@@ -11,7 +11,6 @@ logging.getLogger().setLevel(logging.DEBUG)
 app = Flask(__name__)
 app.config.from_envvar('TECHRICE_SETTINGS')
 # 
-print app.config
 from flask.ext.sqlalchemy import SQLAlchemy
 db = SQLAlchemy(app)
 
