@@ -29,7 +29,8 @@ unsigned char old[100];
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-char server[] = "iotree.org";    // name address for Google (using DNS)
+//char server[] = "iotree.org";    // name address for Google (using DNS)
+//char test_server[] = "www.google.com";    // name address for Google (using DNS)
 
 // Set the static IP address to use if the DHCP fails to assign
 IPAddress ip(192, 168, 1, random(100,200));
@@ -112,16 +113,23 @@ void loop()
     {
       techrice_packet_t p = *((techrice_packet_t*)(buf));
       p.signal_strength = rssi;
+      p.node_id = 2;
       char http_body[300];
-      sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d&timestamp=%s&node_id=%s,rssi=%d",
+//      sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d&timestamp=%s&node_id=%s,rssi=%d",
+//                (int) p.temperature.sensor_id, (int) p.temperature.value,
+//                (int) p.humidity.sensor_id, (int) p.humidity.value,
+//                (int) p.battery.sensor_id, (int) p.battery.value,
+//                (int) p.solar.sensor_id, (int) p.solar.value,
+//                p.timestamp,
+//                (int) p.node_id,
+//                (int) p.signal_strength);
+    sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d",
                 (int) p.temperature.sensor_id, (int) p.temperature.value,
                 (int) p.humidity.sensor_id, (int) p.humidity.value,
                 (int) p.battery.sensor_id, (int) p.battery.value,
-                (int) p.solar.sensor_id, (int) p.solar.value,
-                p.timestamp,
-                p.node_id,
-                p.signal_strength);
+                (int) p.solar.sensor_id, (int) p.solar.value);
       api_post(http_body);
+//      api_get();
     }
   }
   
@@ -131,19 +139,70 @@ void loop()
     Serial.print(c);
   }
 
+  if (!client.connected()) {
+//    Serial.println();
+//    Serial.println("disconnecting.");
+    client.stop();
+  }
+
 
 }
 
 void api_post(char *http_body){
   
   char http_header[400];
-  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: techrice.iotree.org\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nAccept: */*\r\nUser-Agent: arashi2\r\nConnection: keep-alive\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
+  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: techrice.iotree.org\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
   strcat(http_header, http_body);
   Serial.println("WHOLE REQUEST");
   Serial.println(http_header);
+  char server[] = "iotree.org";
   client.stop();
   if (client.connect(server, 80)) {
-    client.print(http_header);
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.print(http_header);  
+    client.flush();
+    Serial.print("Done flushing");
+  }
+  else {
+    // kf you didn't get a connection to the server:
+    Serial.println("connection failed");
+    client.stop();
+  }
+}
+
+//int reconnect(int max_retries){
+//  int retry = 0;
+//  Serial.print("Connected? ");
+//  Serial.println(client.connected());
+//  client.stop();
+//  while(retry < max_retries){
+//    delay(1000);
+//    Serial.print("Retry # ");
+//    Serial.println(retry);
+//    if (client.connect(server, 80)) {
+//      return 1;
+//    }
+//    else {
+//      retry++;
+//      // kf you didn't get a connection to the server:
+//      Serial.println("connection failed");
+//      client.stop();
+//    }  
+//  }
+//  return 0;
+//}
+  
+void google_get(){
+  char server[] = "www.google.com";
+  client.stop();
+  if (client.connect(server, 80)) {
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.println("GET / HTTP/1.1");
+    client.println("Host: www.google.com");
+    client.println("Connection: close");
+    client.println();
   }
   else {
     // kf you didn't get a connection to the server:
@@ -151,20 +210,22 @@ void api_post(char *http_body){
   }
 }
 
-//void reconnect(int max_retries){
-//  int retries = 0;
-//  client.stop();
-//  while(retries < max_retries){
-//    if (client.connect(server, 80)) {
-//      client.print(http_header);
-//    }
-//  else {
-//    // kf you didn't get a connection to the server:
-//    Serial.println("connection failed");
-//  }  
-//  }
-  
-  
+void api_test_get(){
+  char server[] = "techrice.iotree.org";
+  client.stop();
+  if (client.connect(server, 80)) {
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.println("GET /testtest HTTP/1.1");
+    client.println("Host: techrice.iotree.org");
+    client.println("Connection: close");
+    client.println();
+  }
+  else {
+    // kf you didn't get a connection to the server:
+    Serial.println("connection failed");
+  }
+}
   
 
 

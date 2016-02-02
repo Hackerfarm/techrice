@@ -53,7 +53,7 @@ def seed_techrice_node(site_id = None, alias = None, latitude = None, longitude 
 	if site_id:
 		site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
 	else:
-		site = Site.query.filter_by(id = site_id)
+		site = Site.query.filter_by(id = site_id).first()
 	
 	if not alias: 
 		alias = 'Techrice node {}'.format(uuid4().hex)
