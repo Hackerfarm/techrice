@@ -1,13 +1,15 @@
 from flask import request
 from models import Reading, Sensor, Node
-import time
+import calendar
 from app import app
 from datetime import datetime, timedelta
+from flask_restful import reqparse
+
 def get_sensor_period_data(sensor_id, start_datetime, end_datetime):
 	#data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.timestamp > start_datetime) & (Reading.timestamp < end_datetime)).all()
 	#xdata = map(lambda r: time.mktime(r.timestamp.timetuple()) * 1000, data)
 	data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.created > start_datetime) & (Reading.created < end_datetime)).all()
-	xdata = map(lambda r: time.mktime(r.created.timetuple()) * 1000, data)
+	xdata = map(lambda r: calendar.timegm(r.created.timetuple()) * 1000, data)
 	ydata = map(lambda r: r.value, data)
 	# ydata = list(loggeobrowngen(len(xdata)))
 	return xdata, ydata
@@ -34,26 +36,57 @@ def sensor_weekly_chart(sensor_id):
 	
 	xdata, ydata = get_sensor_period_data(sensor_id, start_datetime, end_datetime)
 	chart_settings = get_chart_settings()
-	chart = lineChart(name="sensor {} weekly".format(sensor_id), x_is_date=True, x_axis_format="%b %d %H:%M", **chart_settings)
-	extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
+	chart = lineChart(name="sensor {} weekly".format(sensor_id), x_is_date=True, x_axis_format="%y %b %d %H:%M", **chart_settings)
+	extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%y %d %b %Y %H:%M:%S %p"}
 	chart.add_serie(y=ydata, x=xdata, name=sensor.name, extra=extra_serie)
 	chart.buildhtml()
 	return chart.htmlcontent
 
 @app.route('/chart/node/<int:node_id>')
 def node_weekly_chart(node_id):
-	end_datetime = datetime.utcnow() + timedelta(hours = 9)
-	start_datetime = end_datetime - timedelta(days = 7) + timedelta(hours = 9)
+	parser = reqparse.RequestParser(bundle_errors = True)
+	parser.add_argument('d', type=int, required=False, default = 7, help='<int> hours')
+	parser.add_argument('h', type=int, required=False, default = 0, help='<int> minute')
+	args = parser.parse_args()
+	start_datetime = datetime.utcnow() - timedelta(days = args['d'], hours = args['h'])
+	end_datetime = datetime.utcnow()
+
 	node = Node.query.filter_by(id = node_id).first()
 	if not node: return "node {} not found".format(node_id)
-	chart_settings = get_chart_settings()
+	chart_settings = {'width': '100px', 'height': 500}
 	chart = lineChart(name="node {} weekly".format(node_id), x_is_date=True, x_axis_format="%b %d %H:%M", **chart_settings)
 	for sensor in node.sensors:
 		xdata, ydata = get_sensor_period_data(sensor.id, start_datetime, end_datetime)
 		extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
 		chart.add_serie(y=ydata, x=xdata, name=sensor.name, extra=extra_serie)
 	chart.buildhtml()
+	# return chart
 	return chart.htmlcontent
+
+def testchart(node_id):
+	end_datetime = datetime.utcnow() + timedelta(hours = 9)
+	start_datetime = end_datetime - timedelta(days = 7) + timedelta(hours = 9)
+	node = Node.query.filter_by(id = node_id).first()
+
+
+	if not node: return "node {} not found".format(node_id)
+	chart_settings = {'width': '100px', 'height': 500}
+	chart = lineChart(name="node {} weekly".format(node_id), x_is_date=True, x_axis_format="%b %d %H:%M", **chart_settings)
+	
+	x = range(10)
+	s1 = [random() for r in range(10)]
+	s2 = [10 + random() for r in range(10)]
+
+	a1 = chart.new_x_axis(name = 'percent', tickFormat = u"d3.format(',.02f')")
+	a2 = chart.new_x_axis(name = 'temperature', tickFormat = u"d3.format(',.02f')")
+	for sensor in node.sensors:
+		xdata, ydata = get_sensor_period_data(sensor.id, start_datetime, end_datetime)
+		extra_serie = {"tooltip": {"y_start": "There is ", "y_end": " calls"}, "date_format": "%d %b %Y %H:%M:%S %p"}
+		chart.add_serie(y=ydata, x=xdata, name=sensor.name, extra=extra_serie)
+	chart.buildhtml()
+	return chart
+	return chart.htmlcontent
+
 
 # @app.route('/chart/daily/sensor/<int:sensor_id>')
 # def sensor_daily_chart(sensor_id):
