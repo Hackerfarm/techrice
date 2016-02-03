@@ -1,3 +1,4 @@
+#include <map>
 #include "saboten.h"
 #include <utilsawesome.h>
 #include <chibi.h>
@@ -10,6 +11,7 @@
 #include <avr/sleep.h>
 #include <SPI.h>
 #include <SdFat.h>
+
 
 
 #define FILENAME "data.txt"
@@ -31,7 +33,9 @@ void Board::register_sensor(BaseSensor *sensor){
 void Board::read_sensors(unsigned char *buffer){
   int n_sensors = this->sensors->size();
   for(int i; i<n_sensors; i++){
+    std::map<int,double> measurements;
     double value = this->sensors->at(i)->read(buffer);
+    // Reading reading = {this->node_id, this->sensors->at(1)->sensor_id, value, }
   }
 }
 

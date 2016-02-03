@@ -30,7 +30,7 @@ int32_t port = 4489;
 char my_name[] = "saboten_sogoki";
 
 // Set the static IP address to use if the DHCP fails to assign
-IPAddress ip(192, 168, 1, 177);
+IPAddress ip(192, 168, 1, random(100,200));
 
 // Initialize the Ethernet client library
 // with the IP address and port of the server

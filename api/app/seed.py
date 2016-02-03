@@ -18,11 +18,11 @@ def loggeobrowngen(n = -1, offset = 50):
 
 
 def seed_site(sensors = 1, days = 7, interval_seconds = 3600):
-	site = Site.create(alias = 'seeded_site')
-	node = Node.create(alias = 'seeded_node', site = site, latitude = 35.146623 + random() / 100.0, longitude = 139.9835682 + random() / 100.0)
+	site = Site.create(name = 'seeded_site')
+	node = Node.create(name = 'seeded_node', site = site, latitude = 35.146623 + random() / 100.0, longitude = 139.9835682 + random() / 100.0)
 	sensortype = SensorType.create(name = 'HC SR-04', unit = 'cm')
 	for i in range(sensors):
-		sensor = Sensor.create(sensortype = sensortype, node = node, alias = 'water distance %s'%i)
+		sensor = Sensor.create(sensortype = sensortype, node = node, name = 'water distance %s'%i)
 		timestamp = datetime.utcnow() - timedelta(days = 7)
 		data = loggeobrowngen()
 		n_readings = 0
@@ -32,6 +32,48 @@ def seed_site(sensors = 1, days = 7, interval_seconds = 3600):
 			n_readings += 1
 		data.close()
 	return {'site': site, 'node': node}
+
+from uuid import uuid4
+
+from app import db
+from sqlalchemy.exc import IntegrityError
+
+def seed_techrice_nodetypes():
+	try:
+		SensorType.create(name = 'battery voltage', unit = 'mV')
+		SensorType.create(name = 'solar voltage', unit = 'mV')
+		SensorType.create(name = 'DHT11 temperature', unit = 'C')
+		SensorType.create(name = 'DHT11 humidity', unit = '%')
+		SensorType.create(name = 'sonar HC SR-04', unit = 'cm')
+	except IntegrityError:
+		db.session.rollback()
+		return 'Seems like the sensortypes have already been created. Session has been rolled back'
+
+def seed_techrice_node(site_id = None, alias = None, latitude = None, longitude = None):
+	if site_id:
+		site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
+	else:
+		site = Site.query.filter_by(id = site_id).first()
+	
+	if not alias: 
+		alias = 'Techrice node {}'.format(uuid4().hex)
+	node = Node.create(name = alias, site = site, latitude = latitude, longitude = longitude)
+	
+
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
+	Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+	return {
+		'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
+		'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors)
+		}
+
+	# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
+	# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()
+	# dht11_humidity_sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first()
+	# sonar_sensortype = SensorType.query.filter_by(name = 'HC SR-04').first()
 
 
 from multiprocessing import Process
@@ -44,7 +86,7 @@ class FakeRealtimeSensor(Process):
 		if sensor: 
 			self.sensor = sensor
 		else:
-			self.sensor = Sensor.create(alias = 'started at %s'%datetime.utcnow().ctime())
+			self.sensor = Sensor.create(name = 'started at %s'%datetime.utcnow().ctime())
 			print '*********** Created new sensor'
 			print self.sensor
 
