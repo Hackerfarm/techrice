@@ -7,6 +7,7 @@
 #include <SdFat.h>
 #include <pcf2127.h>
 #include <stdint.h>
+#include "DHT11.h"
 
 SdFat sd;
 SdFile myFile;
@@ -16,6 +17,7 @@ SdFile myFile;
 #define FILENAME "MANGROVE.TXT"
 #define ADCREFVOLTAGE 3.3
 
+int dht11Pin = 8;
 int hgmPin = 14;
 int sdCsPin = 15;
 int rtcCsPin = 28; 
@@ -33,6 +35,7 @@ unsigned char buf[100];
 static FILE uartout = {0};  
 
 PCF2127 pcf(0, 0, 0, rtcCsPin);
+DHT11 dht;
 
 typedef struct{
   int32_t count;
@@ -85,11 +88,15 @@ void setup()
   chibiCmdInit(57600);
   
 
-  //pcf.enableMinuteInterrupt();
-  pcf.enableSecondInterrupt();
+  pcf.enableMinuteInterrupt();
+  //pcf.enableSecondInterrupt();
   pcf.setInterruptToPulse();
   attachInterrupt(2, rtcInterrupt, FALLING);
+
+  pinMode(dht11Pin, INPUT);
+  dht.setup(dht11Pin);
   
+    
   // Initialize the chibi wireless stack
   chibiInit();
   
@@ -160,16 +167,21 @@ void loop()
   int addr = 3;
   byte data[16];
   techrice_packet_t packet;
-  get_temp(packet.humidity, packet.temperature);
-  delay(1000);
-  // The first data returned by the sensor seems wrong
-  get_temp(packet.temperature, packet.humidity);
+  delay(dht.getMinimumSamplingPeriod());
+  //delay(1000);
+  while(!get_temp(packet.temperature, packet.humidity))
+  {
+    delay(1000);
+  }
   get_vbat(packet.battery);
   get_vsol(packet.solar);
   packet.count = count;
   
   chibiTx(addr, (unsigned char*)(&packet), sizeof(packet));
-  //cmdSleepMcu(0,0);
+  delay(1000);
+  cmdSleepMcu(0,0);
+
+  
   char sbuf[200];
   sprintf(sbuf, "Sent packet #%d with following data: \nTemperature: %d\nHumidity: %d\nBattery (mV): %d\nSolar (mV): %d\nSignal: %d\n\n", 
                 count, 
@@ -394,20 +406,40 @@ void cmdSleepMcu(int arg_cnt, char **args)
 
   digitalWrite(ledPin, LOW);
   
-  attachInterrupt(2, rtcInterrupt, FALLING);
+
+  sleep_radio();
   delay(100);
 
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  chibiSleepRadio(0);
+    
   sleep_enable();        // setting up for sleep ...
   
   ADCSRA &= ~(1 << ADEN);    // Disable ADC
+  attachInterrupt(2, rtcInterrupt, FALLING);
   sleep_mode();
 
   sleep_disable();
+  wakeup_radio();
   ADCSRA |= (1 << ADEN);
   digitalWrite(ledPin, HIGH);
-  chibiSleepRadio(1);
+  
+}
+
+void sleep_radio()
+{
+    digitalWrite(hgmPin, LOW);
+    // set up chibi regs to turn off external P/A
+    chibiRegWrite(0x4, 0x20);
+    chibiSleepRadio(1);
+}
+
+void wakeup_radio()
+{
+    chibiSleepRadio(0);
+    digitalWrite(hgmPin, HIGH);
+    // set up chibi regs to turn on external P/A
+    chibiRegWrite(0x4, 0xA0);
+    
 }
 
 /**************************************************************************/
@@ -485,79 +517,20 @@ void cmdWriteDate(int arg_cnt, char **args)
 
 
 
-bool get_temp(int32_t &temperature, int32_t& humidity){
-    
-    // It's ugly, isn't it?
-    int pin = 8;
-    int ret = 0;
-    uint8_t bits[5];
-    const int DHTLIB_TIMEOUT = (F_CPU/40000);
+bool get_temp(int32_t &temperature, int32_t& humidity)
+{ 
+  float h, t;
+  h = dht.getHumidity();
+  t = dht.getTemperature();
   
-    // INIT BUFFERVAR TO RECEIVE DATA
-    uint8_t mask = 128;
-    uint8_t idx = 0;
-
-    uint8_t bit = digitalPinToBitMask(pin);
-    uint8_t port = digitalPinToPort(pin);
-    volatile uint8_t *PIR = portInputRegister(port);
-
-    // EMPTY BUFFER
-    for (uint8_t i = 0; i < 5; i++) bits[i] = 0;
-
-    // REQUEST SAMPLE
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, LOW); // T-be 
-    delay(18);  //delay(wakeupDelay);
-    digitalWrite(pin, HIGH);   // T-go
-    delayMicroseconds(40);
-    pinMode(pin, INPUT);
-
-    // GET ACKNOWLEDGE or TIMEOUT
-    uint16_t loopCntLOW = DHTLIB_TIMEOUT;
-    while ((*PIR & bit) == LOW )  // T-rel
-    {
-        if (--loopCntLOW == 0) return false;
-    }
-
-    uint16_t loopCntHIGH = DHTLIB_TIMEOUT;
-    while ((*PIR & bit) != LOW )  // T-reh
-    {
-        if (--loopCntHIGH == 0) return false;
-    }
-
-    // READ THE OUTPUT - 40 BITS => 5 BYTES
-    for (uint8_t i = 40; i != 0; i--)
-    {
-        loopCntLOW = DHTLIB_TIMEOUT;
-        while ((*PIR & bit) == LOW )
-        {
-            if (--loopCntLOW == 0) return false;
-        }
-
-        uint32_t t = micros();
-
-        loopCntHIGH = DHTLIB_TIMEOUT;
-        while ((*PIR & bit) != LOW )
-        {
-            if (--loopCntHIGH == 0) return false;
-        }
-
-        if ((micros() - t) > 40)
-        { 
-            bits[idx] |= mask;
-        }
-        mask >>= 1;
-        if (mask == 0)   // next byte?
-        {
-            mask = 128;
-            idx++;
-        }
-    }
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, HIGH);
-    humidity = bits[0];
-    temperature = bits[2];
+  if(dht.getStatus()==DHT11::ERROR_NONE){
+    humidity = h;
+    temperature = t;
     return true;
+  }
+  else{
+    return false;
+  }
 }
 
 
@@ -640,7 +613,7 @@ static int uart_putchar (char c, FILE *stream)
 
 void rtcInterrupt()
 {
-  detachInterrupt(2);
+  //detachInterrupt(2);
   //sleep_disable();
 }
 

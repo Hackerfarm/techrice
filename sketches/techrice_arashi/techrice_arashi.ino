@@ -25,7 +25,9 @@ unsigned char old[100];
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-char server[] = "www.google.co.jp";    // name address for Google (using DNS)
+char server[] = "iv-labs.org";
+int32_t port = 4489;
+char my_name[] = "saboten_sogoki";
 
 // Set the static IP address to use if the DHCP fails to assign
 IPAddress ip(192, 168, 1, 177);
@@ -60,18 +62,22 @@ void setup() {
   Serial.println("connecting...");
 
   // if you get a connection, report back via serial:
-  /*if (client.connect(server, 80)) {
+  if (client.connect(server, port)) {
     Serial.println("connected");
     // Make a HTTP request:
-    client.println("GET /search?q=arduino HTTP/1.1");
-    client.println("Host: www.google.co.jp");
-    client.println("Connection: close");
+    client.println("POST /post HTTP/1.0");
+    client.println("Host: field-test.iv-labs.org");
+    client.println("Content-Type: application/x-www-form-urlencoded; charset=utf-8");
+    client.println("Content-Length: 44");
     client.println();
+    client.println("identity=saboten_sogoki&content=switched_on");
+    client.println();
+    client.stop();
   }
   else {
     // kf you didn't get a connection to the server:
     Serial.println("connection failed");
-  }*/
+  }
 }
 
 void loop()
@@ -98,25 +104,52 @@ void loop()
                     (int)(packet.solar),
                     (int)(packet.signal_strength));
       Serial.print(sbuf);
+      
+      if (client.connect(server, port)) {
+      //if (true) {
+        Serial.println("connected");
+        // Make a HTTP request:
+        client.println("POST /post HTTP/1.0");
+        client.println("Host: field-test.iv-labs.org");
+        client.println("Content-Type: application/x-www-form-urlencoded; charset=utf-8");
+        client.println("Content-Length: 110");
+        client.println();
+        sprintf(sbuf, "identity=saboten_sogoki&content=%%7B%%22vbat%%22%%3A%d%%2C%%20%%22vsol%%22%%3A%d%%2C%%20%%22temperature%%22%%3A%d%%7D", (int)(packet.battery), (int)(packet.solar), (int)(packet.temperature));
+        client.println(sbuf);
+        Serial.println("Sent:");
+        Serial.println(sbuf);
+        client.println();
+        client.println();
+        client.println();
+        client.println();
+        client.println("\0");
+        client.flush();
+        client.stop();
+      }
+      else {
+        Serial.println("connection failed");
+        client.stop();
+      }      
     }
   }
   
   
   // if there are incoming bytes available
   // from the server, read them and print them:
-  if (client.available()) {
+  /*while (client.available()) {
     char c = client.read();
     Serial.print(c);
-  }
+  }*/
+  client.stop();
 
   // if the server's disconnected, stop the client:
-  if (!client.connected()) {
+  /*if (!client.connected()) {
     //Serial.println();
     //Serial.println("disconnecting.");
     client.stop();
 
     // do nothing forevermore:
     //while (true);
-  }
+  }*/
 }
 
