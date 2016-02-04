@@ -1,9 +1,10 @@
-from flask import request
+from flask import request, jsonify
 from models import Reading, Sensor, Node
 import calendar
 from app import app
 from datetime import datetime, timedelta
 from flask_restful import reqparse
+from resources import ApiError
 
 def get_sensor_period_data(sensor_id, start_datetime, end_datetime):
 	#data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.timestamp > start_datetime) & (Reading.timestamp < end_datetime)).all()
@@ -42,18 +43,27 @@ def sensor_weekly_chart(sensor_id):
 	chart.buildhtml()
 	return chart.htmlcontent
 
+
+
 @app.route('/chart/node/<int:node_id>')
 def node_weekly_chart(node_id):
 	parser = reqparse.RequestParser(bundle_errors = True)
-	parser.add_argument('d', type=int, required=False, default = 7, help='<int> hours')
-	parser.add_argument('h', type=int, required=False, default = 0, help='<int> minute')
+	parser.add_argument('days', type=int, required=False, default = 0, help='<int> > 0 days')
+	parser.add_argument('hours', type=int, required=False, default = 0, help='<int> > 0 hours')
 	args = parser.parse_args()
+	
+	if args['days'] < 0 or args['hours'] < 0:
+		return jsonify(ApiError('time parameters days >= 0 and hours >= 0 required'))
+	
+	if args['days'] == 0 and args['hours'] == 0:
+		args['days'] = 1
+	
 	start_datetime = datetime.utcnow() - timedelta(days = args['d'], hours = args['h'])
 	end_datetime = datetime.utcnow()
 
 	node = Node.query.filter_by(id = node_id).first()
 	if not node: return "node {} not found".format(node_id)
-	chart_settings = {'width': '100px', 'height': 500}
+	chart_settings = {'width': '100%', 'height': 500}
 	chart = lineChart(name="node {} weekly".format(node_id), x_is_date=True, x_axis_format="%b %d %H:%M", **chart_settings)
 	for sensor in node.sensors:
 		xdata, ydata = get_sensor_period_data(sensor.id, start_datetime, end_datetime)
