@@ -52,13 +52,16 @@ def node_weekly_chart(node_id):
 	parser.add_argument('hours', type=int, required=False, default = 0, help='<int> > 0 hours')
 	args = parser.parse_args()
 	
-	if args['days'] < 0 or args['hours'] < 0:
+	days = args['days']
+	hours = args['hours']
+
+	if days < 0 or hours < 0:
 		return jsonify(ApiError('time parameters days >= 0 and hours >= 0 required'))
 	
-	if args['days'] == 0 and args['hours'] == 0:
-		args['days'] = 1
+	if days == 0 and hours == 0:
+		days = 1
 	
-	start_datetime = datetime.utcnow() - timedelta(days = args['d'], hours = args['h'])
+	start_datetime = datetime.utcnow() - timedelta(days = days, hours = hours)
 	end_datetime = datetime.utcnow()
 
 	node = Node.query.filter_by(id = node_id).first()
