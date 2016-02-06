@@ -21,7 +21,7 @@ def testtest():
 	return str(request.form)
 
 from flask.ext.security import http_auth_required
-import seed
+from seed import TechRice
 from flask_restful import reqparse
 
 @app.route('/seed/node/techrice', methods = ['POST'])
@@ -32,4 +32,4 @@ def seed_techrice_node():
 	parser.add_argument('longitude', type=float, required=False, help='<float> node longitude')
 	parser.add_argument('latitude', type=float, required=False, help='<float> node latitude')
 	args = parser.parse_args()
-	return jsonify(seed.seed_techrice_node(**args))
+	return jsonify(TechRice.seed_node(**args))
