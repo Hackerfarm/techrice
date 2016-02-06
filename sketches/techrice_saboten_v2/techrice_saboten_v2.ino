@@ -34,13 +34,13 @@ typedef struct{
 /*
 These values will be provided by the API
 */
-#define NODE_ID 1
+#define NODE_ID 2
 #define EDGE_ID 3
-#define TEMPERATURE_SENSOR_ID 3
-#define HUMIDITY_SENSOR_ID 4
-#define BATTERY_SENSOR_ID 2
-#define SOLAR_SENSOR_ID 1
-#define SONAR_SENSOR_ID 5
+#define TEMPERATURE_SENSOR_ID 8
+#define HUMIDITY_SENSOR_ID 9
+#define BATTERY_SENSOR_ID 7
+#define SOLAR_SENSOR_ID 6
+#define SONAR_SENSOR_ID 10
 
 techrice_packet_t r = {
   {TEMPERATURE_SENSOR_ID,0}, 
@@ -52,6 +52,7 @@ techrice_packet_t r = {
   "",
   NODE_ID
 };
+
 
 
 SdFat sd;
@@ -144,8 +145,8 @@ void setup()
   printf(TITLE);
   printf("Datecode: %s\n", DATECODE);
 
-  pcf.writeDate(16, 1, 24, 6);
-  pcf.writeTime(13, 8, 0);
+  pcf.writeDate(16, 1, 29, 4);
+  pcf.writeTime(10, 15, 0);
 
   chibiSetShortAddr(NODE_ID);
 
