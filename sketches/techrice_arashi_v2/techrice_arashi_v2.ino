@@ -134,16 +134,16 @@ void loop()
   }
   
   
-  if (client.available()) {
-    char c = client.read();
-    Serial.print(c);
-  }
-
-  if (!client.connected()) {
-//    Serial.println();
-//    Serial.println("disconnecting.");
-    client.stop();
-  }
+//  if (client.available()) {
+//    char c = client.read();
+//    Serial.print(c);
+//  }
+  client.stop();
+//  if (!client.connected()) {
+////    Serial.println();
+////    Serial.println("disconnecting.");
+//    client.stop();
+//  }
 
 
 }
@@ -163,6 +163,7 @@ void api_post(char *http_body){
     client.print(http_header);  
     client.flush();
     Serial.print("Done flushing");
+    client.stop();
   }
   else {
     // kf you didn't get a connection to the server:
