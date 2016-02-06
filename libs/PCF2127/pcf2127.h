@@ -198,6 +198,7 @@ public:
     void setInterruptToPermanent();
     void enableSecondInterrupt();
     void enableMinuteInterrupt();
+    void runWatchdogTimer(uint8_t clock_source, uint8_t time_val);
 
 private:
     int deviceAddr;

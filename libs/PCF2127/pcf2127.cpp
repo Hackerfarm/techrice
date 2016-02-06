@@ -522,6 +522,19 @@ void PCF2127::enableMinuteInterrupt(){
   write(PCF_CONTROL_1, RC1);
 }  
 
+void PCF2127::runWatchdogTimer(uint8_t clock_source, uint8_t time_val){
+  // byte reg_10h = read(PCF_WATCHDOG_TIM_CTL);
+  /* See table 55 */
+  // reg_10h |= B00100000; //Sets interrupt to pulsed signal
+  // reg_10h |= B10000000; //Enables watchdog timer; disables countdown timer
+  // reg_10h |= B10000010; //Sets timer source clock to 1Hz
+ 
+  uint8_t reg = B10100000; // Sets interrupt to pulsed signal && enables watchdog timer
+  reg |= clock_source;
+  write(PCF_WATCHDOG_TIM_CTL, reg);
+  write(PCF_WATCHDOG_TIM_VAL, time_val); //1 minute interrupt
+
+}
 
 
 

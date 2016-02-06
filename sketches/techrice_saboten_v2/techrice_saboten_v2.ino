@@ -35,7 +35,7 @@ typedef struct{
 These values will be provided by the API
 */
 #define NODE_ID 2
-#define EDGE_ID 3
+#define EDGE_ID 44
 #define TEMPERATURE_SENSOR_ID 8
 #define HUMIDITY_SENSOR_ID 9
 #define BATTERY_SENSOR_ID 7
@@ -130,9 +130,9 @@ void setup()
   chibiCmdInit(57600);
   
 
-  pcf.enableMinuteInterrupt();
+//  pcf.enableMinuteInterrupt();
 //  pcf.enableSecondInterrupt();
-  pcf.setInterruptToPulse();
+//  pcf.setInterruptToPulse();
   attachInterrupt(2, rtcInterrupt, FALLING);
   
   // Initialize the chibi wireless stack
@@ -318,8 +318,9 @@ void sleep_mcu(){
   Serial.println("Going to sleep");
   delay(100);
   digitalWrite(ledPin, LOW);
+  pcf.runWatchdogTimer(0b11,5);
   sleep_mode();
-
+  /* ....ZZzzzzZZzzzZZZzz....*/
   sleep_disable();
   Serial.println("Awake");
   digitalWrite(ledPin, HIGH);
