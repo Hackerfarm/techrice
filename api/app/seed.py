@@ -64,29 +64,25 @@ class TechRice(object):
 		node = Node.create(name = alias, site = site, latitude = latitude, longitude = longitude)
 		
 
-		Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
-		Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
-		Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
-		Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
-		Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+		solar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
+		battery = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
+		temperature = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
+		humidity = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
+		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+
+		header = Template(techrice_header).render(**{
+		  'node_id': node.id,
+		  'temperature_sensor_id': temperature.id,
+		  'humidity_sensor_id':humidity.id,
+		  'battery_sensor_id': battery.id,
+		  'solar_sensor_id': solar.id,
+		  'sonar_sensor_id': sonar.id})
+
 		return {
 			'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
 			'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors),
-			'header' : TechRice.node_header()
+			'header' : header
 			}
-
-	@staticmethod
-	def node_header():
-		header = Template(techrice_header)
-
-		return header.render(**{
-		  'node_id': 3,
-		  'edge_id': 2,
-		  'temperature_sensor_id': 8,
-		  'humidity_sensor_id':9,
-		  'battery_sensor_id': 7,
-		  'solar_sensor_id': 6,
-		  'sonar_sensor_id': 10})
 
 techrice_header = """
 typedef struct{
@@ -104,7 +100,6 @@ typedef struct{
 These values will be provided by the API
 */
 #define NODE_ID {{ node_id }}
-#define EDGE_ID {{ edge_id }}
 #define TEMPERATURE_SENSOR_ID {{ temperature_sensor_id }}
 #define HUMIDITY_SENSOR_ID {{ humidity_sensor_id }}
 #define BATTERY_SENSOR_ID {{ battery_sensor_id }}
