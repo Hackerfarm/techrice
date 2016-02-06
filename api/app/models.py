@@ -143,7 +143,7 @@ class Sensor(ExtendedBase, db.Model):
 	sensortype_id = db.Column(db.Integer, db.ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
 		
 	def json(self):
-		return {'id': self.id, 'type': 'sensor', 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'readings': map(lambda r: r.id, self.readings), 'created': str(self.created), 'updated': str(self.updated)}
+		return {'id': self.id, 'type': 'sensor', 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'n_readings': len(self.readings), 'created': str(self.created), 'updated': str(self.updated)}
 
 
 class Reading(ExtendedBase, db.Model):
