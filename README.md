@@ -6,10 +6,8 @@
 A site is a logical grouping of nodes. A node must belong to a site. 
 *GET /sites
 *GET /site/<int:site_id>
-
-DELETE /site/<int:site_id> (auth required)
-
-POST /site (auth required, form params: 'name')
+*DELETE /site/<int:site_id> (auth required)
+*POST /site (auth required, form params: 'name')
 
 ### Node routes
 GET /nodes (query args: 'site_id')
