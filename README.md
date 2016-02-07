@@ -1,6 +1,6 @@
 # techrice
 
-## API routes
+## API resource routes
 
 ### Sites
 A site is a logical grouping of nodes.
@@ -17,7 +17,7 @@ A node is a physical piece of hardware/board. A node must belong to one and only
 *   POST /node (auth required, form params: 'name', 'site_id', 'longitude', 'latitude')
 
 ### Sensors
-A node can have any positive number of sensors. Any sensor must belong to a node. Each sensor must also belong to one and only one sensor type
+A node can have any positive number of sensors. Any sensor must belong to a node. Each sensor must also belong to one and only one sensor type. Solar panel voltage and battery voltage are also considered as sensors.
 *   GET /sensor (query args: 'node_id')
 *   GET /sensor/<int:sensor_id>
 *   DELETE /sensor/<int:sensor_id> (auth required)
@@ -25,7 +25,7 @@ A node can have any positive number of sensors. Any sensor must belong to a node
 
 
 ### SensorTypes
-The same physical phenomenon can be measured by many different types of sensors. The API forces you to assign each sensor to a sensor type (or create a new one if you need to)
+The same physical phenomenon can be measured by many different types of sensors. The API forces you to assign each sensor to a sensor type (or create a new one if you need to). 
 *   GET /sensortype/<int:sensortype_id>
 *   DELETE /sensortype/<int:sensortype_id> (auth required)
 *   POST /sensortype (auth required, form params: 'name', 'unit')
@@ -37,3 +37,9 @@ Readings represent actual sensor data. A reading must belong to one and only one
 *   GET /reading/<int:reading_id>
 *   DELETE /reading/<int:reading_id> (auth required)
 *   POST /reading (auth required, form params: 'sensor_id', 'value', 'timestamp')
+
+## API other routes
+### POST /seed/node/techrice (auth required)
+Creates a new techrice node and returns
+1. node JSON representation
+2. C code that must be pasted into the node sketch
