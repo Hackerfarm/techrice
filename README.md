@@ -2,15 +2,16 @@
 
 ## API routes
 
-### Site routes
-GET /sites
-
-GET /site/<int:site_id>
+### Sites
+A site is a logical grouping of nodes. A node must belong to a site. 
+*GET /sites
+*GET /site/<int:site_id>
 
 DELETE /site/<int:site_id> (auth required)
 
 POST /site (auth required, form params: 'name')
 
+### Node routes
 GET /nodes (query args: 'site_id')
 
 GET /node/<int:node_id>
@@ -19,6 +20,7 @@ DELETE /node/<int:node_id> (auth required)
 
 POST /node (auth required, form params: 'name', 'site_id', 'longitude', 'latitude')
 
+### Sensor routes
 GET /sensor (query args: 'node_id')
 
 GET /sensor/<int:sensor_id>
@@ -27,6 +29,8 @@ DELETE /sensor/<int:sensor_id> (auth required)
 
 POST /sensor (auth required, form params: 'node_id', 'sensortype_id')
 
+
+### SensorType routes
 GET /sensortype/<int:sensortype_id>
 
 DELETE /sensortype/<int:sensortype_id> (auth required)
