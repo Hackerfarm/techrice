@@ -16,10 +16,6 @@ typedef struct{
   int32_t value;
 } reading_t;
 
-
-/*
-This struct depends on the note type
-*/
 typedef struct{
   reading_t temperature;
   reading_t humidity;
@@ -35,7 +31,7 @@ typedef struct{
 These values will be provided by the API
 */
 #define NODE_ID 2
-#define EDGE_ID 44
+#define EDGE_ID BROADCAST_ADDR
 #define TEMPERATURE_SENSOR_ID 8
 #define HUMIDITY_SENSOR_ID 9
 #define BATTERY_SENSOR_ID 7
@@ -43,9 +39,9 @@ These values will be provided by the API
 #define SONAR_SENSOR_ID 10
 
 techrice_packet_t r = {
-  {TEMPERATURE_SENSOR_ID,0}, 
+  {TEMPERATURE_SENSOR_ID,0},
   {HUMIDITY_SENSOR_ID,0},
-  {BATTERY_SENSOR_ID,0}, 
+  {BATTERY_SENSOR_ID,0},
   {SOLAR_SENSOR_ID,0},
   0,
   0,
@@ -318,7 +314,7 @@ void sleep_mcu(){
   Serial.println("Going to sleep");
   delay(100);
   digitalWrite(ledPin, LOW);
-  pcf.runWatchdogTimer(0b11,5);
+  pcf.runWatchdogTimer(0b11,30);
   sleep_mode();
   /* ....ZZzzzzZZzzzZZZzz....*/
   sleep_disable();
