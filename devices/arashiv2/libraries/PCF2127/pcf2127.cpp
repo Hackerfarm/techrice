@@ -126,8 +126,8 @@ void PCF2127::writeTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
 void PCF2127::readTime(uint8_t *hour, uint8_t *minutes, uint8_t *seconds)
 {
     *hour = bcdDecode(read(PCF_HOURS));
-    *minutes = bcdDecode(read(PCF_MINUTES));
-    *seconds = bcdDecode(read(PCF_SECONDS));
+    *minutes = bcdDecode(read(PCF_MINUTES) & PCF_MINUTES_MASK);
+    *seconds = bcdDecode(read(PCF_SECONDS) & PCF_SECONDS_MASK);
 }
 
 /**************************************************************************/
@@ -198,6 +198,8 @@ void PCF2127::timestampTrig()
 /**************************************************************************/
 void PCF2127::readTimestampDate(uint8_t *year, uint8_t *month, uint8_t *day)
 {
+
+
     *year = bcdDecode(read(PCF_YEAR_TIMESTP));
     *month = bcdDecode(read(PCF_MON_TIMESTP));
     *day = bcdDecode(read(PCF_DAY_TIMESTP));
@@ -211,8 +213,8 @@ void PCF2127::readTimestampDate(uint8_t *year, uint8_t *month, uint8_t *day)
 void PCF2127::readTimestampTime(uint8_t *hour, uint8_t *minutes, uint8_t *seconds)
 {
     *hour = bcdDecode(read(PCF_HOUR_TIMESTP));
-    *minutes = bcdDecode(read(PCF_MIN_TIMESTP));
-    *seconds = bcdDecode(read(PCF_SEC_TIMESTP));
+    *minutes = bcdDecode(read(PCF_MIN_TIMESTP) & PCF_MINUTES_MASK);
+    *seconds = bcdDecode(read(PCF_SEC_TIMESTP) & PCF_SECONDS_MASK);
 }
 
 /**************************************************************************/
@@ -220,23 +222,46 @@ void PCF2127::readTimestampTime(uint8_t *hour, uint8_t *minutes, uint8_t *second
 
 */
 /**************************************************************************/
-void PCF2127::alarmEnb(uint8_t almTimeEnb, uint8_t almDayEnb, uint8_t almWeekdayEnb)
+void PCF2127::alarmDisable(uint8_t almTimeDisable, uint8_t almDayDisable, uint8_t almWeekdayDisable)
 {
-    if (almTimeEnb)
+    if (almTimeDisable)
     {
         write(PCF_HOUR_ALM, 1<<7);
         write(PCF_MINUTE_ALM, 1<<7);
         write(PCF_SECOND_ALM, 1<<7);
     }
 
-    if (almDayEnb)
+    if (almDayDisable)
     {
         write(PCF_DAY_ALM, 1<<7);
     }
 
-    if (almWeekdayEnb)
+    if (almWeekdayDisable)
     {
         write(PCF_WEEKDAY_ALM, 1<<7);
+    }
+
+    // enable alarm interrupt enable
+    readModWriteBit(PCF_CONTROL_2, BIT_AIE, 0);    
+}
+
+void PCF2127::alarmEnb(uint8_t almTimeEnb, uint8_t almDayEnb, uint8_t almWeekdayEnb)
+{
+    if (almTimeEnb)
+    {
+        write(PCF_HOUR_ALM, 0<<7);
+        write(PCF_MINUTE_ALM, 0<<7);
+        write(PCF_SECOND_ALM, 0<<7);
+    }
+
+    if (almDayEnb)
+    {
+        write(PCF_DAY_ALM, 0<<7);
+    }
+
+    if (almWeekdayEnb)
+    {
+        write(PCF_WEEKDAY_ALM, 0<<7);
     }
 
     // enable alarm interrupt enable
@@ -251,9 +276,18 @@ void PCF2127::alarmEnb(uint8_t almTimeEnb, uint8_t almDayEnb, uint8_t almWeekday
 void PCF2127::alarmWriteTime(uint8_t hour, uint8_t minutes, uint8_t seconds)
 {
     write(PCF_HOUR_ALM, hour);
-    write(PCF_MINUTE_ALM, minutes);
-    write(PCF_SECOND_ALM, seconds);
+    write(PCF_MINUTE_ALM, bcdEncode(minutes));
+    write(PCF_SECOND_ALM, bcdEncode(seconds));
 }
+
+
+void PCF2127::alarmReadTime(uint8_t *hour, uint8_t *minutes, uint8_t *seconds)
+{
+    *hour = bcdDecode(read(PCF_HOUR_ALM));
+    *minutes = bcdDecode(read(PCF_MINUTE_ALM) & PCF_MINUTES_MASK);
+    *seconds = bcdDecode(read(PCF_SECOND_ALM) & PCF_SECONDS_MASK);
+}
+
 
 /**************************************************************************/
 /*!
@@ -452,6 +486,67 @@ void PCF2127::readModWriteBit(uint8_t addr, uint8_t pos, uint8_t val)
 
 */
 /**************************************************************************/
+
+
+void PCF2127::setControlBit(uint8_t *controlByte, uint8_t registerBit, bool value){
+  /*
+
+  */
+  *controlByte |= (value<<registerBit);
+}
+
+void PCF2127::setInterruptToPulse(){
+  byte reg_10h = read(PCF_WATCHDOG_TIM_CTL);
+  reg_10h |= B00100000;
+  write(PCF_WATCHDOG_TIM_CTL, reg_10h);
+}
+
+void PCF2127::setInterruptToPermanent(){
+  byte reg_10h = read(PCF_WATCHDOG_TIM_CTL);
+  reg_10h &= B11011111;
+  write(PCF_WATCHDOG_TIM_CTL, reg_10h);
+}
+
+
+void PCF2127::enableSecondInterrupt(){
+  byte RC1 = read(PCF_CONTROL_1);
+  setControlBit(&RC1, BIT_MI, 0); // disable minute interrupt
+  setControlBit(&RC1, BIT_SI, 1); // enable second interrupt
+  write(PCF_CONTROL_1, RC1);
+}  
+
+void PCF2127::enableMinuteInterrupt(){
+  byte RC1 = read(PCF_CONTROL_1);
+  setControlBit(&RC1, BIT_MI, 1); // enable minute interrupt
+  setControlBit(&RC1, BIT_SI, 0); // disable second interrupt
+  write(PCF_CONTROL_1, RC1);
+}  
+
+void PCF2127::runWatchdogTimer(uint8_t clock_source, uint8_t time_val){
+  // byte reg_10h = read(PCF_WATCHDOG_TIM_CTL);
+  /* See table 55 */
+  // reg_10h |= B00100000; //Sets interrupt to pulsed signal
+  // reg_10h |= B10000000; //Enables watchdog timer; disables countdown timer
+  // reg_10h |= B10000010; //Sets timer source clock to 1Hz
+ 
+  uint8_t reg = B10100000; // Sets interrupt to pulsed signal && enables watchdog timer
+  reg |= clock_source;
+  write(PCF_WATCHDOG_TIM_CTL, reg);
+  write(PCF_WATCHDOG_TIM_VAL, time_val); //1 minute interrupt
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 //ISR(PCF2127_INTP)
 //{
 //}

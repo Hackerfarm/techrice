@@ -84,6 +84,10 @@ enum
     BIT_BIE                 = 1,
     BIT_BLIE                = 0,
 
+    /*
+        Register addresses
+    */
+
     PCF_SECONDS             = 0x03,
     PCF_MINUTES             = 0x04,
     PCF_HOURS               = 0x05,
@@ -115,7 +119,13 @@ enum
     PCF_RAM_ADDR_MSB        = 0x1A,
     PCF_RAM_ADDR_LSB        = 0x1B,
     PCF_RAM_WRT_CMD         = 0x1C,
-    PCF_RAM_RD_CMD          = 0x1D
+    PCF_RAM_RD_CMD          = 0x1D,
+
+    /*
+        REGISTER MASKS
+    */
+    PCF_SECONDS_MASK        = 127,
+    PCF_MINUTES_MASK        = 127
 };
 
 class PCF2127
@@ -160,8 +170,10 @@ public:
     void readTimestampTime(uint8_t *hour, uint8_t *minutes, uint8_t *seconds);
 
     void alarmEnb(uint8_t almTimeEnb, uint8_t almDayEnb, uint8_t almWeekdayEnb = 0);
+    void alarmDisable(uint8_t almTimeDisable, uint8_t almDayDisable, uint8_t almWeekdayDisable = 0);
     void alarmWriteDate(uint8_t day, uint8_t weekday = 0);
     void alarmWriteTime(uint8_t hour, uint8_t minutes, uint8_t seconds);
+    void alarmReadTime(uint8_t *hour, uint8_t *minutes, uint8_t *seconds);
 
     void timerInit(uint8_t mode, uint8_t src);
     void timerLoad(uint8_t val);
@@ -177,6 +189,16 @@ public:
     void readModWriteBit(uint8_t addr, uint8_t pos, uint8_t val);
     uint8_t bcdEncode(uint8_t val);
     uint8_t bcdDecode(uint8_t val);
+
+    /*
+        High level functions for using the RTC
+    */
+    void setControlBit(uint8_t *controlByte, uint8_t registerBit, bool value);
+    void setInterruptToPulse();
+    void setInterruptToPermanent();
+    void enableSecondInterrupt();
+    void enableMinuteInterrupt();
+    void runWatchdogTimer(uint8_t clock_source, uint8_t time_val);
 
 private:
     int deviceAddr;
