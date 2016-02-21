@@ -94,7 +94,7 @@ void setup() {
   Serial.println("Started");
 }
 
-
+#define techrice_packet(o) (*(techrice_packet_t*)o)
 
 void loop()
 {
@@ -111,16 +111,16 @@ void loop()
     Serial.println(len);
     if (len)
     {
-      techrice_packet_t p = *((techrice_packet_t*)(buf));
-      p.signal_strength = rssi;
-      p.node_id = 2;
+      //techrice_packet_t p = *((techrice_packet_t*)(buf));
+      //p.signal_strength = rssi;
+      //p.node_id = 2;
       char http_body[300];
 
     sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d",
-                (int) p.temperature.sensor_id, (int) p.temperature.value,
-                (int) p.humidity.sensor_id, (int) p.humidity.value,
-                (int) p.battery.sensor_id, (int) p.battery.value,
-                (int) p.solar.sensor_id, (int) p.solar.value);
+                (int) techrice_packet(buf).temperature.sensor_id, (int) techrice_packet(buf).temperature.value,
+                (int) techrice_packet(buf).humidity.sensor_id, (int) techrice_packet(buf).humidity.value,
+                (int) techrice_packet(buf).battery.sensor_id, (int) techrice_packet(buf).battery.value,
+                (int) techrice_packet(buf).solar.sensor_id, (int) techrice_packet(buf).solar.value);
       api_post(http_body);
     }
   }
