@@ -116,6 +116,44 @@ techrice_packet_t r = {
 			'header' : header
 			}
 
+class Header(object):
+	template = """
+typedef struct{
+  {% for sensor in sensors -%}
+  reading_t {{sensor['name']}};
+  {% endfor -%}
+  int32_t count;
+  int32_t signal_strength;
+  char timestamp[19];
+  int32_t node_id;
+} packet_t;
+
+{% for sensor in sensors -%}
+#define {{sensor['name']}} {{sensor['id']}};
+{% endfor %}
+
+techrice_packet_t r = {
+  {% for sensor in sensors -%}
+  {%raw%}{{%endraw%}{{sensor['name']}}{%raw%}}, 0{%endraw%},
+  {% endfor -%}
+  0,
+  0,
+  "",
+  NODE_ID
+};
+"""
+
+	@staticmethod
+	def get_header(node_id):
+		node = Node.query.filter_by(id = node_id).first()
+		if node:
+			sensors = [{'name': sensor.name.replace(' ', '_'), 'id': sensor.id} for sensor in node.sensors]
+		else:
+			return 'node not found'
+		header = Template(Header.template).render(sensors = sensors)
+		return header
+
+
 		# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
 		# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()
 		# dht11_humidity_sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first()
