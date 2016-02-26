@@ -39,52 +39,7 @@ from app import db
 from sqlalchemy.exc import IntegrityError
 
 class TechRice(object):
-
-	@staticmethod
-	def seed_nodetypes():
-		try:
-			SensorType.create(name = 'battery voltage', unit = 'mV')
-			SensorType.create(name = 'solar voltage', unit = 'mV')
-			SensorType.create(name = 'DHT11 temperature', unit = 'C')
-			SensorType.create(name = 'DHT11 humidity', unit = '%')
-			SensorType.create(name = 'sonar HC SR-04', unit = 'cm')
-		except IntegrityError:
-			db.session.rollback()
-			return 'Seems like the sensortypes have already been created. Session has been rolled back'
-
-	@staticmethod
-	def seed_node(site_id = None, alias = None, latitude = None, longitude = None):
-		if site_id:
-			site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
-		else:
-			site = Site.query.filter_by(id = site_id).first()
-		
-		if not alias: 
-			alias = 'Techrice node {}'.format(uuid4().hex)
-		node = Node.create(name = alias, site = site, latitude = latitude, longitude = longitude)
-		
-
-		solar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
-		battery = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
-		temperature = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
-		humidity = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
-		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
-
-		header = Template(techrice_header).render(**{
-		  'node_id': node.id,
-		  'temperature_sensor_id': temperature.id,
-		  'humidity_sensor_id':humidity.id,
-		  'battery_sensor_id': battery.id,
-		  'solar_sensor_id': solar.id,
-		  'sonar_sensor_id': sonar.id})
-
-		return {
-			'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
-			'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors),
-			'header' : header
-			}
-
-techrice_header = """
+	header = """
 typedef struct{
   reading_t temperature;
   reading_t humidity;
@@ -117,6 +72,50 @@ techrice_packet_t r = {
   NODE_ID
 };
 """
+	@staticmethod
+	def seed_nodetypes():
+		try:
+			SensorType.create(name = 'battery voltage', unit = 'mV')
+			SensorType.create(name = 'solar voltage', unit = 'mV')
+			SensorType.create(name = 'DHT11 temperature', unit = 'C')
+			SensorType.create(name = 'DHT11 humidity', unit = '%')
+			SensorType.create(name = 'sonar HC SR-04', unit = 'cm')
+		except IntegrityError:
+			db.session.rollback()
+			return 'Seems like the sensortypes have already been created. Session has been rolled back'
+
+	@staticmethod
+	def seed_node(site_id = None, alias = None, latitude = None, longitude = None):
+		if site_id:
+			site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
+		else:
+			site = Site.query.filter_by(id = site_id).first()
+		
+		if not alias: 
+			alias = 'Techrice node {}'.format(uuid4().hex)
+		node = Node.create(name = alias, site = site, latitude = latitude, longitude = longitude)
+		
+
+		solar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'solar voltage').first(), name = 'vsol')
+		battery = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
+		temperature = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
+		humidity = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
+		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+
+		header = Template(TechRice.header).render(**{
+		  'node_id': node.id,
+		  'temperature_sensor_id': temperature.id,
+		  'humidity_sensor_id':humidity.id,
+		  'battery_sensor_id': battery.id,
+		  'solar_sensor_id': solar.id,
+		  'sonar_sensor_id': sonar.id})
+
+		return {
+			'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
+			'sensors': map(lambda s: 'name: {}, id: {}'.format(s.name, s.id), node.sensors),
+			'header' : header
+			}
+
 		# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
 		# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()
 		# dht11_humidity_sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first()
