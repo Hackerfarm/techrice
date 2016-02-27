@@ -123,8 +123,9 @@ class SensorType(ExtendedBase, db.Model):
 	__tablename__ = 'sensortypes'
 
 	id = db.Column(db.Integer, primary_key = True)
-	name = db.Column(db.String(), unique = True)
+	name = db.Column(db.String(), unique = True) ### The chip name
 	unit = db.Column(db.String())
+	description = db.Column(db.String()) ### What kind of sensor is this? 
 	
 	sensors = db.relationship('Sensor', backref = db.backref('sensortype'))
 
@@ -136,11 +137,13 @@ class Sensor(ExtendedBase, db.Model):
 	__tablename__ = 'sensors'
 	
 	id = db.Column(db.Integer, primary_key = True )
-	name = db.Column(db.String())
+	name = db.Column(db.String()) ### A short name for the sensor, e.g. "sonar"
+	description = db.Column(db.String()) ### What the sensor measures, for instance "distance to water level"
 	readings = db.relationship('Reading', cascade='all,delete-orphan', passive_deletes=True, backref = db.backref('sensor', single_parent = True))
 
 	node_id = db.Column(db.Integer, db.ForeignKey('nodes.id', ondelete = 'CASCADE') )
 	sensortype_id = db.Column(db.Integer, db.ForeignKey('sensortypes.id', ondelete = 'SET NULL') )
+
 		
 	def json(self):
 		return {'id': self.id, 'type': 'sensor', 'name': self.name, 'node_id': self.node_id, 'sensortype_id': self.sensortype_id, 'n_readings': len(self.readings), 'created': str(self.created), 'updated': str(self.updated)}
