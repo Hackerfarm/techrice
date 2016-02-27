@@ -79,7 +79,7 @@ techrice_packet_t r = {
 			SensorType.create(name = 'solar voltage', unit = 'mV')
 			SensorType.create(name = 'DHT11 temperature', unit = 'C')
 			SensorType.create(name = 'DHT11 humidity', unit = '%')
-			SensorType.create(name = 'sonar HC SR-04', unit = 'cm')
+			SensorType.create(name = 'HC SR-04', unit = 'cm')
 		except IntegrityError:
 			db.session.rollback()
 			return 'Seems like the sensortypes have already been created. Session has been rolled back'
@@ -100,7 +100,7 @@ techrice_packet_t r = {
 		battery = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'battery voltage').first(), name = 'vbat')
 		temperature = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first(), name = 'temperature')
 		humidity = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
-		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'distance to water surface')
+		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'sonar')
 
 		header = Template(TechRice.header).render(**{
 		  'node_id': node.id,
@@ -153,11 +153,6 @@ techrice_packet_t r = {
 		header = Template(Header.template).render(sensors = sensors)
 		return header
 
-
-		# vbat_sensortype = SensorType.query.filter_by(name = 'vbat').first()
-		# dht11_temp_sensortype = SensorType.query.filter_by(name = 'DHT11 temperature').first()
-		# dht11_humidity_sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first()
-		# sonar_sensortype = SensorType.query.filter_by(name = 'HC SR-04').first()
 
 
 from multiprocessing import Process
