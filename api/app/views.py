@@ -12,9 +12,6 @@ def index():
 def unauthorized():
 	return 'Go away'
 
-@app.route('/posttest', methods = ['POST'])
-def posttest():
-	return str(request.form)
 
 @app.route('/testtest', methods = ['GET', 'POST'])
 def testtest():
@@ -23,6 +20,16 @@ def testtest():
 from flask.ext.security import http_auth_required
 from seed import TechRice
 from flask_restful import reqparse
+
+@app.route('/utcnow')
+def get_utcnow():
+	pass
+
+from seed import Header
+@app.route('/utils/node_header/<int:node_id>', methods = ['GET'])
+def get_header(node_id):
+	return jsonify({'header': Header.get_header(node_id)})
+
 
 @app.route('/seed/node/techrice', methods = ['POST'])
 @http_auth_required
