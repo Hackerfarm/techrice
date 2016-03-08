@@ -110,7 +110,7 @@ rest_api.add_resource(NodeResource, '/node/<int:node_id>', '/node')
 class NodeListResource(restful.Resource):
 	def get(self):		
 		parser = reqparse.RequestParser(bundle_errors = True)
-		parser.add_argument('site_id', type=int, required=True, help='<int> site_id required')
+		parser.add_argument('site_id', type=int, required=False, help='<int> site_id required')
 		args = parser.parse_args()
 		
 		nodes = Node.query.filter(Node.site_id == args['site_id']).all()
@@ -197,7 +197,7 @@ rest_api.add_resource(SensorResource, '/sensor/<int:sensor_id>', '/sensor')
 class SensorListResource(restful.Resource):
 	def get(self):
 		parser = reqparse.RequestParser(bundle_errors = True)
-		parser.add_argument('node_id', type=int, required=True, help='<int> node_id required')
+		parser.add_argument('node_id', type=int, required=False, help='<int> node_id required')
 		args = parser.parse_args()
 		
 		sensors = Sensor.query.filter(Sensor.node_id == args['node_id']).all()
