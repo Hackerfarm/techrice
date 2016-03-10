@@ -50,9 +50,13 @@ techrice_packet_t r = {
 };
 
 
+#define RTC_CLOCK_SOURCE 0b11 // Selects the clock source. 0b11 selects 1/60Hz clock.
+#define RTC_SLEEP 30 // Number of timer clock cycles before interrupt is generated.
+
 
 SdFat sd;
 SdFile myFile;
+#define SBUF_SIZE 200 //Note that due to inefficient implementation of sd_write() the memory footprint is actually twice of this value. 
 
 #define DATECODE "08-09-2014"
 #define TITLE "SABOTEN 900 MHz Long Range\n"
@@ -95,6 +99,8 @@ void setup()
   
   // The uart is the standard output device STDOUT.
   stdout = &uartout ;
+
+  
   
   old[0] = 3;
   
@@ -148,6 +154,10 @@ void setup()
 
   Serial.print("NODE_ID: ");
   Serial.println(r.node_id);
+
+
+  init_sdcard();
+
   /*
   // check for SD and init
   sdDetect = digitalRead(sdDetectPin);
@@ -212,78 +222,25 @@ void loop()
   r.count++;
   get_timestamp(r.timestamp);
 
-  char sbuf[200];
-  sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar),", 
-                (int) r.node_id,
-                (int) r.count, 
-                (int) r.timestamp,
+  char sbuf[SBUF_SIZE];
+  sprintf(sbuf, "{\"time\":\"%s\", \"count\": %d, \"data\": \"%d,%d;%d,%d;%d,%d;%d,%d\"}", 
+                (int) r.timestamp, (int) r.count,
                 (int) r.temperature.sensor_id, (int) r.temperature.value,
                 (int) r.humidity.sensor_id, (int) r.humidity.value,
                 (int) r.battery.sensor_id, (int) r.battery.value,
-                (int) r.solar.sensor_id, (int) r.solar.value);
+                (int) r.solar.sensor_id, (int) r.solar.value
+                );
   Serial.println(sbuf);
-//  char hum[19];
-//  get_timestamp(hum);
+  sd_write((char *)sbuf);
   chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
-//  delay(10000);
-//  for(int i=0; i<10; i++){
-//    digitalWrite(ledPin, HIGH);
-//    delay(500);
-//    digitalWrite(ledPin, LOW);
-//    delay(500);  
-//    }
-  
+  free(sbuf);
   sleep_mcu();
-
-  
-  // Check if any data was received from the radio. If so, then handle it.
- /* if (chibiDataRcvd() == true)
-  { 
-    int len, rssi, src_addr;
-    byte buf[100];  // this is where we store the received data
-    
-    // retrieve the data and the signal strength
-    len = chibiGetData(buf);
-    
-    if (len == 0) break;
-    
-    rssi = chibiGetRSSI();
-    src_addr = chibiGetSrcAddr();
-  
-   if (strcmp((char *)old, (char *)buf))
-   {
-     uint16_t tmp1, tmp2;
-     
-     tmp1 = chibiCmdStr2Num((char *)buf, 10);
-     tmp2 = chibiCmdStr2Num((char *)old, 10);
-     if ((tmp1 - tmp2) != 1)
-     {
-       Serial.print("Message received: "); Serial.print((char *)buf); Serial.print(" "); Serial.print(" ");Serial.print(rssi, DEC); Serial.print(" ");Serial.print(dupe_cnt); Serial.println("****** MISSING ******");
-       dupe_cnt++;
-     }
-     else
-     {
-       Serial.print("Message received: "); Serial.print((char *)buf); Serial.print(" "); Serial.print(" ");Serial.print(rssi, DEC); Serial.print(" ");Serial.println(dupe_cnt);
-     }
-   }
-   else
-   {
-     Serial.print("Message received: "); Serial.print((char *)buf); Serial.print(" "); Serial.print(rssi, HEX); Serial.print(" ");Serial.print(dupe_cnt); Serial.println("****** DUPE******");
-     dupe_cnt++;
-   }
-   strcpy((char *)old, (char *)buf);
-  }*/
 }
+
 
 void rtcInterrupt(){
   Serial.println("Interrupt");
   detachInterrupt(2);
-// for(int i=0; i<10; i++){
-//    digitalWrite(ledPin, HIGH);
-//    delay(200);
-//    digitalWrite(ledPin, LOW);
-//    delay(200);  
-//    }
 }
 
 void sleep_radio(){
@@ -314,7 +271,8 @@ void sleep_mcu(){
   Serial.println("Going to sleep");
   delay(100);
   digitalWrite(ledPin, LOW);
-  pcf.runWatchdogTimer(0b11,30);
+  
+  pcf.runWatchdogTimer(RTC_CLOCK_SOURCE, RTC_SLEEP);
   sleep_mode();
   /* ....ZZzzzzZZzzzZZZzz....*/
   sleep_disable();
@@ -323,6 +281,72 @@ void sleep_mcu(){
   wakeup_radio();
   ADCSRA |= (1 << ADEN); // Enable ADC
 }
+
+void init_sdcard(){
+  // set up sd card detect
+  pinMode(sdDetectPin, INPUT);
+  digitalWrite(sdDetectPin, HIGH);
+  delay(1000);
+  // check for SD and init
+  int sdDetect = digitalRead(sdDetectPin);
+  // Serial.println(sdDetect);
+  if (sdDetect == 0){
+    // init the SD card
+    if (!sd.begin(sdCsPin)){
+      
+      Serial.println("Card failed, or not present");
+      sd.initErrorHalt();
+      return;
+    }
+    Serial.println("SD Card is initialized.\n");
+  }
+  else{
+    Serial.println("No SD card detected.\n");
+  }
+
+}
+
+
+void sd_write(char *buffer){    
+    int open_success = myFile.open(FILENAME, O_RDWR | O_CREAT | O_AT_END);
+    if (open_success){
+      
+      char data[SBUF_SIZE];
+      strcpy(data, (char*) buffer);
+      Serial.println("Writing data to SD card ");
+      myFile.println(data);
+
+      // int tmp=0;
+      // while (*buffer) {
+      //   *buffer++;
+      //   tmp++;
+      // }
+      // Serial.println("buffer length:");
+      // Serial.println(tmp);
+      // Serial.println(buffer);
+      
+      // char *hum = "hej msad\n\0";
+      // int tmp2=0;
+      // while (*hum) {
+      //   *hum++;
+      //   tmp2++;
+      // }
+      // Serial.println(tmp2);
+      // myFile.write(hum, tmp2 + 10);
+
+      // myFile.write(buffer, tmp);
+
+      // myFile.write((unsigned char*) buffer, tmp);
+
+      myFile.close();
+      Serial.println("Closed file");
+     
+    }
+    else{
+      Serial.println("Error opening dataFile");
+    }
+}
+
 
 
 
