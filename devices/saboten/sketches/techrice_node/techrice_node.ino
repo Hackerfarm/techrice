@@ -63,7 +63,7 @@ SdFile myFile;
 #define FILENAME "TECHRICE.TXT"
 #define ADCREFVOLTAGE 3.3
 
-int hgmPin = 14;
+int hgmPin = 22;
 int sdCsPin = 15;
 int rtcCsPin = 28; 
 int ledPin = 18;
