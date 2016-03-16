@@ -20,7 +20,7 @@
 //#include "TimerOne.h"
 #define RX_BUFSIZE 300
 
-#define NODE_ID 3
+#define NODE_ID 333
 
 unsigned char buf[RX_BUFSIZE];
 int len;
@@ -29,8 +29,8 @@ unsigned char old[100];
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-char server[] = "iotree.org";
-const int port = 10000;
+char server[] = "api.techrice.jp";
+const int port = 80;
 
 // Set the static IP address to use if the DHCP fails to assign
 IPAddress ip(192, 168, 1, random(100,200));
@@ -58,6 +58,7 @@ typedef struct{
   reading_t humidity;
   reading_t battery;
   reading_t solar;
+  reading_t sonar;
   int32_t count;
   int32_t signal_strength;
   char timestamp[19];
@@ -109,18 +110,21 @@ void loop()
     rssi = chibiGetRSSI();
     src_addr = chibiGetSrcAddr();
     Serial.println(len);
+    Serial.print("Signal strength: ");
+    Serial.println(rssi);
     if (len)
     {
       techrice_packet_t p = *((techrice_packet_t*)(buf));
       p.signal_strength = rssi;
-      p.node_id = 2;
+      p.node_id = NODE_ID;
       char http_body[300];
 
-    sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d",
+    sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
                 (int) p.temperature.sensor_id, (int) p.temperature.value,
                 (int) p.humidity.sensor_id, (int) p.humidity.value,
                 (int) p.battery.sensor_id, (int) p.battery.value,
-                (int) p.solar.sensor_id, (int) p.solar.value);
+                (int) p.solar.sensor_id, (int) p.solar.value,
+                (int) p.sonar.sensor_id, (int) p.sonar.value);
       api_post(http_body);
     }
   }
@@ -129,7 +133,7 @@ void loop()
 
 void api_post(char *http_body){
   char http_header[400];
-  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: techrice.iotree.org\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
+  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: api.techrice.jp\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
   strcat(http_header, http_body);
   Serial.println("WHOLE REQUEST");
   Serial.println(http_header);
