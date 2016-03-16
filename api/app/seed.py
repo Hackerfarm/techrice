@@ -87,9 +87,9 @@ techrice_packet_t r = {
 	@staticmethod
 	def seed_node(site_id = None, alias = None, latitude = None, longitude = None):
 		if site_id:
-			site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
-		else:
 			site = Site.query.filter_by(id = site_id).first()
+		else:
+			site = Site.create(name = 'Techrice site {}'.format(uuid4().hex))
 		
 		if not alias: 
 			alias = 'Techrice node {}'.format(uuid4().hex)
