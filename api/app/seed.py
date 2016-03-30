@@ -116,6 +116,8 @@ techrice_packet_t r = {
 			'header' : header
 			}
 
+
+from jinja2.filters import do_capitalize
 class Header(object):
 	template = """
 typedef struct{
@@ -128,13 +130,14 @@ typedef struct{
   int32_t node_id;
 } packet_t;
 
+
 {% for sensor in sensors -%}
-#define {{sensor['name']}}_sensor_id {{sensor['id']}};
+#define {{sensor['name']|upper}}_SENSOR_ID {{sensor['id']}};
 {% endfor %}
 
 techrice_packet_t r = {
   {% for sensor in sensors -%}
-  {%raw%}{{%endraw%}{{sensor['name']}}_sensor_id{%raw%}}, 0{%endraw%},
+  {%raw%}{{%endraw%}{{sensor['name']|upper}}_SENSOR_ID{%raw%}}, 0{%endraw%},
   {% endfor -%}
   0,
   0,
