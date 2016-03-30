@@ -129,12 +129,12 @@ typedef struct{
 } packet_t;
 
 {% for sensor in sensors -%}
-#define {{sensor['name']}} {{sensor['id']}};
+#define {{sensor['name']}}_sensor_id {{sensor['id']}};
 {% endfor %}
 
 techrice_packet_t r = {
   {% for sensor in sensors -%}
-  {%raw%}{{%endraw%}{{sensor['name']}}{%raw%}}, 0{%endraw%},
+  {%raw%}{{%endraw%}{{sensor['name']}}_sensor_id{%raw%}}, 0{%endraw%},
   {% endfor -%}
   0,
   0,
