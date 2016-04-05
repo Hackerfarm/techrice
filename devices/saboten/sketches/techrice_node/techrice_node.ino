@@ -75,7 +75,9 @@ int vsolPin = 29;
 int sensorPin = 8;
 int sonarTriggerPin = 5;
 int sonarEchoPin = 7;
+int sonarAwakePin = 10;
 int burstModePin = 4;
+
 
 // Pins that will not interfer with the SPI: 2 to 5, 7 to 10 + 14 and 15
 
@@ -139,6 +141,8 @@ void setup()
   // set up the sonar
   pinMode(sonarTriggerPin, OUTPUT);
   pinMode(sonarEchoPin, INPUT);
+  pinMode(sonarAwakePin, OUTPUT);
+  digitalWrite(sonarAwakePin, HIGH);
 
   // set up the burst mode pin
   pinMode(burstModePin, INPUT);
@@ -232,14 +236,27 @@ void loop()
   // This function checks the command line to see if anything new was typed.
 //  chibiCmdPoll();
 
+  digitalWrite(sonarAwakePin, HIGH);
   get_temp(r.temperature.value, r.humidity.value);
   get_vbat(r.battery.value);
   get_vsol(r.solar.value);
   get_sonar(r.sonar.value);
+  delay(1000);
+  get_sonar(r.sonar.value);
+  /*if(r.sonar.value>10){
+    digitalWrite(sonarAwakePin, LOW);
+  }
+  else{
+    digitalWrite(sonarAwakePin, HIGH);
+  }*/
   r.count++;
   get_timestamp(r.timestamp);
 
   char sbuf[SBUF_SIZE];
+  sprintf(sbuf, "Port: %d Bit: %d",digitalPinToPort(hgmPin), digitalPinToBitMask(hgmPin));
+  Serial.println(sbuf);
+
+  
   sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
                 (int) r.node_id,
                 (int) r.count, 
@@ -279,7 +296,9 @@ void wakeup_radio(){
 
 void sleep_mcu(){
   attachInterrupt(2, rtcInterrupt, FALLING);
-  delay(100);
+  digitalWrite(sonarAwakePin, LOW);
+  pinMode(sonarTriggerPin, INPUT);
+  delay(1000);
 
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_radio();
@@ -287,8 +306,9 @@ void sleep_mcu(){
   
   ADCSRA &= ~(1 << ADEN);    // Disable ADC
   Serial.println("Going to sleep");
-  delay(100);
+  delay(1000);
   digitalWrite(ledPin, LOW);
+  
 
   if(digitalRead(burstModePin)==HIGH){
     // Every 30 minutes
@@ -310,8 +330,12 @@ void sleep_mcu(){
   sleep_disable();
   Serial.println("Awake");
   digitalWrite(ledPin, HIGH);
+  pinMode(sonarTriggerPin, OUTPUT);
+  digitalWrite(sonarAwakePin, HIGH);
   wakeup_radio();
   ADCSRA |= (1 << ADEN); // Enable ADC
+  // Let the sonar "boot up"
+  delay(5000);
 }
 
 void init_sdcard(){
