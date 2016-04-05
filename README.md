@@ -32,7 +32,7 @@ The same physical phenomenon can be measured by many different types of sensors.
 
 ### Readings
 Readings represent actual sensor data. A reading must belong to one and only one sensor.
-*   GET /readings (query args: 'sensor_id')
+*   GET /readings (query args: 'sensor_id', 'order_by=created|timestamp')
 *   POST /readings (auth required, query args: 'format=compact|json', form params: 'readings')
 *   GET /reading/<int:reading_id>
 *   DELETE /reading/<int:reading_id> (auth required)
