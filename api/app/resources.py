@@ -253,8 +253,11 @@ class ReadingListResource(restful.Resource):
 	def get(self):
 		parser = reqparse.RequestParser(bundle_errors = True)
 		parser.add_argument('sensor_id', type=int, required=True, help='<int> sensor_id required')
+		parser.add_argument('order_by', type=str, required=False, default="created", choices=["created", "timestamp"], help="<str> set to 'created' or 'timestamp' to sort query. Default is 'created'.")
 		args = parser.parse_args()
-		readings = Reading.query.filter(Reading.sensor_id == args['sensor_id']).all()
+		
+		readings = Reading.query.filter(Reading.sensor_id == args['sensor_id']).order_by(getattr(Reading, args['order_by'])).all()
+
 		if readings:
 			return jsonify(ApiObjects([reading.json() for reading in readings]))
 		else:
