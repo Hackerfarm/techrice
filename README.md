@@ -43,3 +43,6 @@ Readings represent actual sensor data. A reading must belong to one and only one
 Creates a new techrice node and returns
 1. node JSON representation
 2. C code that must be pasted into the node sketch
+
+### /utils/node_header/<int:node_id>
+Returns a dict {"header": escaped string of structs and constants used in the node embedded code}
