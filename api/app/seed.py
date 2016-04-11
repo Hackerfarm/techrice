@@ -130,7 +130,8 @@ typedef struct{
   int32_t node_id;
 } packet_t;
 
-#define NODE_ID {{node_id}}
+#define NODE_ID {{node_id}};
+#define EDGE_ID BROADCAST_ADDR;
 {% for sensor in sensors -%}
 #define {{sensor['name']|upper}}_SENSOR_ID {{sensor['id']}};
 {% endfor %}
