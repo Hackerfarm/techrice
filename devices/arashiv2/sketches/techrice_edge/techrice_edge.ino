@@ -44,6 +44,21 @@ EthernetClient client;
 /*
 This struct will be common for all nodes
 */
+
+#define TIME_PACKET 0
+#define TECHRICE_PACKET 1
+
+// typedef struct{
+//   int8_t type;
+//   char *payload;
+// } packet_t;
+
+typedef struct{
+  int8_t type;
+  char payload[80];
+} packet_t;
+
+
 typedef struct{
   int32_t sensor_id;
   int32_t value;
@@ -65,10 +80,6 @@ typedef struct{
   int32_t node_id;
 } techrice_packet_t;
 
-typedef struct{
-    int8_t type;
-    char *payload;
-  } packet_t;
 
 
 
@@ -79,20 +90,20 @@ void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(57600);
 
-  techrice_packet_t r = {
-    {1,0},
-    {1,0},
-    {1,0},
-    {1,0},
-    {1,0},
-    0,
-    0,
-    "",
-    NODE_ID
-  };
+  // techrice_packet_t r = {
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   0,
+  //   0,
+  //   "",
+  //   NODE_ID
+  // };
 
   
-  packet_t p = {1, (char*)&r};
+  // packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
 //  Ethernet.begin(mac, ip);
@@ -137,7 +148,15 @@ void loop()
     Serial.println(rssi);
     if (len)
     {
-      techrice_packet_t p = *((techrice_packet_t*)(buf));
+      
+      packet_t packet = *((packet_t*)(buf));
+      Serial.print("Packet type: ");
+      Serial.println(packet.type);
+      techrice_packet_t p = *((techrice_packet_t*)(packet.payload));
+      Serial.print("payload size: ");
+      Serial.println(sizeof(packet.payload));
+      Serial.print("payload:");
+      Serial.println(packet.payload);
       p.signal_strength = rssi;
       p.node_id = NODE_ID;
       char http_body[300];

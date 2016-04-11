@@ -20,7 +20,7 @@ START OF API-GENERATED HEADER
 
 typedef struct{
   int8_t type;
-  char *payload;
+  char payload[80];
 } packet_t;
 
 
@@ -114,15 +114,6 @@ static FILE uartout = {0};
 PCF2127 pcf(0, 0, 0, rtcCsPin);
 
 
-
-
-
-
-
-
-
-
-
 void setup()
 {    
   uint8_t i, sdDetect;
@@ -132,8 +123,6 @@ void setup()
   // The uart is the standard output device STDOUT.
   stdout = &uartout ;
 
-  
-  
   old[0] = 3;
   
   // set up high gain mode pin
@@ -275,7 +264,7 @@ void loop()
   get_timestamp(r.timestamp);
 
   
-  packet_t packet = {TECHRICE_PACKET, (char*) &r};
+  // packet_t packet = {TECHRICE_PACKET, (char*) &r};
 
 
   char sbuf[SBUF_SIZE];
@@ -293,7 +282,15 @@ void loop()
                 (int) r.vsol.sensor_id, (int) r.vsol.value,
                 (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
   Serial.println(sbuf);
-  chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
+
+  packet_t packet;
+  packet.type = TECHRICE_PACKET;
+  memcpy(packet.payload, &r, sizeof(r));
+   // = {TECHRICE_PACKET, (char*) &r};
+  // packet_t packet = {TECHRICE_PACKET, "Hello"};
+  Serial.print("payload size: ");
+  Serial.println(sizeof(packet.payload));
+  chibiTx(EDGE_ID, (unsigned char*)(&packet), sizeof(packet));
   free(sbuf);
   sleep_mcu();
 }
