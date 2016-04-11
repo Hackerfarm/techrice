@@ -130,7 +130,7 @@ typedef struct{
   int32_t node_id;
 } packet_t;
 
-
+#define NODE_ID {{node_id}}
 {% for sensor in sensors -%}
 #define {{sensor['name']|upper}}_SENSOR_ID {{sensor['id']}};
 {% endfor %}
@@ -153,7 +153,7 @@ techrice_packet_t r = {
 			sensors = [{'name': sensor.name.replace(' ', '_'), 'id': sensor.id} for sensor in node.sensors]
 		else:
 			return 'node not found'
-		header = Template(Header.template).render(sensors = sensors)
+		header = Template(Header.template).render(node_id = node_id, sensors = sensors)
 		return header
 
 
