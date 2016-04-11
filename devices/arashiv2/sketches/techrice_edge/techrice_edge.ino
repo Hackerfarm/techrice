@@ -50,6 +50,17 @@ typedef struct{
   int32_t node_id;
 } techrice_packet_t;
 
+// typedef struct{
+//   uint16_t year;
+//   uint8_t month;
+//   uint8_t day;
+//   uint8_t hour;
+//   uint8_t ;
+//   uint8_t ;
+// } datetime_packet_t;
+
+
+
 typedef struct{
     int8_t type;
     char *payload;
@@ -117,13 +128,13 @@ void setup() {
   // give the Ethernet shield a second to initialize:
   delay(1000);
   Serial.println("Getting time");
-  unsigned long unixTime = ntpUnixTime(udp);
-  Serial.println(unixTime);
+  time_t rawtime = ntpUnixTime(udp);
+  // Serial.println(unixTime);
 
-  time_t rawtime = unixTime;
+  // time_t rawtime = unixTime;
   struct tm *info;
   /* Get GMT time */
-  info = gmtime(&rawtime );
+  info = gmtime(&rawtime);
   //printf("time: %d\n", rawtime);
 
   Serial.println(info->tm_year);
