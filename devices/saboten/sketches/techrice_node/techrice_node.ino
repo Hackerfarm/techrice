@@ -8,46 +8,70 @@
 #include <pcf2127.h>
 #include <stdint.h>
 
+
+
 /*
-This struct will be common for all nodes
+START OF API-GENERATED HEADER
 */
+
+
+#define TIME_PACKET 0
+#define TECHRICE_PACKET 1
+
+typedef struct{
+  int8_t type;
+  char *payload;
+} packet_t;
+
+
 typedef struct{
   int32_t sensor_id;
   int32_t value;
 } reading_t;
 
+
+
 typedef struct{
+  reading_t vsol;
+  reading_t vbat;
   reading_t temperature;
   reading_t humidity;
-  reading_t battery;
-  reading_t solar;
+  reading_t distance_to_water_surface;
   int32_t count;
   int32_t signal_strength;
   char timestamp[19];
   int32_t node_id;
 } techrice_packet_t;
 
-/*
-These values will be provided by the API
-*/
 #define NODE_ID 2
 #define EDGE_ID BROADCAST_ADDR
+#define VSOL_SENSOR_ID 6
+#define VBAT_SENSOR_ID 7
 #define TEMPERATURE_SENSOR_ID 8
 #define HUMIDITY_SENSOR_ID 9
-#define BATTERY_SENSOR_ID 7
-#define SOLAR_SENSOR_ID 6
-#define SONAR_SENSOR_ID 10
+#define DISTANCE_TO_WATER_SURFACE_SENSOR_ID 10
+
 
 techrice_packet_t r = {
+  {VSOL_SENSOR_ID,0},
+  {VBAT_SENSOR_ID,0},
   {TEMPERATURE_SENSOR_ID,0},
   {HUMIDITY_SENSOR_ID,0},
-  {BATTERY_SENSOR_ID,0},
-  {SOLAR_SENSOR_ID,0},
+  {DISTANCE_TO_WATER_SURFACE_SENSOR_ID,0},
   0,
   0,
   "",
   NODE_ID
 };
+
+
+
+/*
+END OF OF API-GENERATED HEADER
+*/
+
+
+
 
 
 #define RTC_CLOCK_SOURCE 0b11 // Selects the clock source. 0b11 selects 1/60Hz clock.
@@ -70,6 +94,14 @@ int ledPin = 18;
 int sdDetectPin = 19;
 int vbatPin = 31;
 int vsolPin = 29;
+int sensorPin = 8;
+int sonarTriggerPin = 5;
+int sonarEchoPin = 7;
+int sonarAwakePin = 10;
+int burstModePin = 4;
+
+
+// Pins that will not interfer with the SPI: 2 to 5, 7 to 10 + 14 and 15
 
 int dupe_cnt = 0;
 unsigned char old[100];
@@ -127,6 +159,16 @@ void setup()
   digitalWrite(ledPin, LOW);
   //delay(300);
   //digitalWrite(ledPin, LOW);
+
+  // set up the sonar
+  pinMode(sonarTriggerPin, OUTPUT);
+  pinMode(sonarEchoPin, INPUT);
+  pinMode(sonarAwakePin, OUTPUT);
+  digitalWrite(sonarAwakePin, HIGH);
+
+  // set up the burst mode pin
+  pinMode(burstModePin, INPUT);
+
   
   // Initialize the chibi command line and set the speed to 57600 bps
   chibiCmdInit(57600);
@@ -216,22 +258,41 @@ void loop()
   // This function checks the command line to see if anything new was typed.
 //  chibiCmdPoll();
 
+  digitalWrite(sonarAwakePin, HIGH);
   get_temp(r.temperature.value, r.humidity.value);
-  get_vbat(r.battery.value);
-  get_vsol(r.solar.value);
+  get_vbat(r.vbat.value);
+  get_vsol(r.vsol.value);
+  get_sonar(r.distance_to_water_surface.value);
+  delay(1000);
+  get_sonar(r.distance_to_water_surface.value);
+  /*if(r.sonar.value>10){
+    digitalWrite(sonarAwakePin, LOW);
+  }
+  else{
+    digitalWrite(sonarAwakePin, HIGH);
+  }*/
   r.count++;
   get_timestamp(r.timestamp);
 
+  
+  packet_t packet = {TECHRICE_PACKET, (char*) &r};
+
+
   char sbuf[SBUF_SIZE];
-  sprintf(sbuf, "{\"time\":\"%s\", \"count\": %d, \"data\": \"%d,%d;%d,%d;%d,%d;%d,%d\"}", 
-                (int) r.timestamp, (int) r.count,
+  sprintf(sbuf, "Port: %d Bit: %d",digitalPinToPort(hgmPin), digitalPinToBitMask(hgmPin));
+  Serial.println(sbuf);
+
+  
+  sprintf(sbuf, "Node_id: %d, cozunt: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
+                (int) r.node_id,
+                (int) r.count, 
+                (int) r.timestamp,
                 (int) r.temperature.sensor_id, (int) r.temperature.value,
                 (int) r.humidity.sensor_id, (int) r.humidity.value,
-                (int) r.battery.sensor_id, (int) r.battery.value,
-                (int) r.solar.sensor_id, (int) r.solar.value
-                );
+                (int) r.vbat.sensor_id, (int) r.vbat.value,
+                (int) r.vsol.sensor_id, (int) r.vsol.value,
+                (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
   Serial.println(sbuf);
-  sd_write((char *)sbuf);
   chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
   free(sbuf);
   sleep_mcu();
@@ -261,7 +322,9 @@ void wakeup_radio(){
 
 void sleep_mcu(){
   attachInterrupt(2, rtcInterrupt, FALLING);
-  delay(100);
+  digitalWrite(sonarAwakePin, LOW);
+  pinMode(sonarTriggerPin, INPUT);
+  delay(1000);
 
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_radio();
@@ -269,17 +332,36 @@ void sleep_mcu(){
   
   ADCSRA &= ~(1 << ADEN);    // Disable ADC
   Serial.println("Going to sleep");
-  delay(100);
+  delay(1000);
   digitalWrite(ledPin, LOW);
   
-  pcf.runWatchdogTimer(RTC_CLOCK_SOURCE, RTC_SLEEP);
+
+  if(digitalRead(burstModePin)==HIGH){
+    // Every 30 minutes
+    pcf.runWatchdogTimer(0b11,30);
+    Serial.println("Sleeping for 30 minutes");
+    Serial.flush();
+  }
+  else{
+    // Every 10 seconds
+    pcf.runWatchdogTimer(0b10,10);
+    Serial.println("Sleeping for 10 seconds");
+    Serial.flush();
+  }
+  
+  //pcf.runWatchdogTimer(RTC_CLOCK_SOURCE, RTC_SLEEP);
+
   sleep_mode();
   /* ....ZZzzzzZZzzzZZZzz....*/
   sleep_disable();
   Serial.println("Awake");
   digitalWrite(ledPin, HIGH);
+  pinMode(sonarTriggerPin, OUTPUT);
+  digitalWrite(sonarAwakePin, HIGH);
   wakeup_radio();
   ADCSRA |= (1 << ADEN); // Enable ADC
+  // Let the sonar "boot up"
+  delay(5000);
 }
 
 void init_sdcard(){
@@ -645,12 +727,33 @@ void cmdWriteDate(int arg_cnt, char **args)
   printf("Year: %d, Month: %d, Day: %d, Weekday: %d\n", year, month, day, weekday);
 }
 
-
+bool get_sonar(int32_t &distance){
+  int32_t duration;
+  digitalWrite(sonarTriggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(sonarTriggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(sonarTriggerPin, LOW);
+  duration = pulseIn(sonarEchoPin, HIGH);
+  
+  distance = (duration/2) / 29.1;
+  if (distance >= 200){
+    distance = 200;
+  }
+  if (distance < 0){
+    distance = 0;
+  }  
+  
+  /*digitalWrite(ledPin, HIGH);
+  delay(distance*10);
+  digitalWrite(ledPin, LOW);*/
+  
+}
 
 bool get_temp(int32_t &temperature, int32_t& humidity){
     
     // It's ugly, isn't it?
-    int pin = 8;
+    int pin = sensorPin;
     int ret = 0;
     uint8_t bits[5];
     const int DHTLIB_TIMEOUT = (F_CPU/40000);

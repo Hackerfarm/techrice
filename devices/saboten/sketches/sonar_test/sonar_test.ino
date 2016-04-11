@@ -3,14 +3,14 @@
 #define led 13
 
 void setup() {
-  Serial.begin (9600);
+  Serial.begin (57600);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   pinMode(led, OUTPUT);
 }
 
 void loop() {
-  long duration, distance;
+  int32_t duration, distance;
   digitalWrite(trigPin, LOW);  // Added this line
   delayMicroseconds(2); // Added this line
   digitalWrite(trigPin, HIGH);
@@ -27,7 +27,7 @@ void loop() {
   }
   
   digitalWrite(led, HIGH);
-  delay(distance*4);
+  delay(distance*10);
   digitalWrite(led, LOW);
   
   delay(500);

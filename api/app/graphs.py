@@ -9,7 +9,7 @@ from resources import ApiError
 def get_sensor_period_data(sensor_id, start_datetime, end_datetime):
 	#data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.timestamp > start_datetime) & (Reading.timestamp < end_datetime)).all()
 	#xdata = map(lambda r: time.mktime(r.timestamp.timetuple()) * 1000, data)
-	data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.created > start_datetime) & (Reading.created < end_datetime)).all()
+	data = Reading.query.filter((Reading.sensor_id == sensor_id) & (Reading.created > start_datetime) & (Reading.created < end_datetime)).order_by(Reading.created).all()
 	xdata = map(lambda r: calendar.timegm(r.created.timetuple()) * 1000, data)
 	ydata = map(lambda r: r.value, data)
 	# ydata = list(loggeobrowngen(len(xdata)))
