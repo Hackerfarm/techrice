@@ -27,6 +27,8 @@ EthernetUDP udp;
 /*
 This struct will be common for all nodes
 */
+
+#define NODE_ID 1
 typedef struct{
   int32_t sensor_id;
   int32_t value;
@@ -78,20 +80,20 @@ void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(57600);
 
-  techrice_packet_t r = {
-    {1,0},
-    {1,0},
-    {1,0},
-    {1,0},
-    {1,0},
-    0,
-    0,
-    "",
-    NODE_ID
-  };
+  // techrice_packet_t r = {
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   {1,0},
+  //   0,
+  //   0,
+  //   "",
+  //   NODE_ID
+  // };
 
   
-  packet_t p = {1, (char*)&r};
+  // packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
 //  Ethernet.begin(mac, ip);
@@ -157,7 +159,7 @@ void loop()
     {
       techrice_packet_t p = *((techrice_packet_t*)(buf));
       p.signal_strength = rssi;
-      p.node_id = NODE_ID;
+      p.node_id = src_addr;
       char http_body[300];
 
     sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
