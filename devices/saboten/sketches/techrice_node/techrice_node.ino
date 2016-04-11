@@ -8,48 +8,58 @@
 #include <pcf2127.h>
 #include <stdint.h>
 
+
+
 /*
-This struct will be common for all nodes
+START OF API-GENERATED HEADER
 */
+
 typedef struct{
   int32_t sensor_id;
   int32_t value;
 } reading_t;
 
+
+
 typedef struct{
+  reading_t vsol;
+  reading_t vbat;
   reading_t temperature;
   reading_t humidity;
-  reading_t battery;
-  reading_t solar;
-  reading_t sonar;
+  reading_t distance_to_water_surface;
   int32_t count;
   int32_t signal_strength;
   char timestamp[19];
   int32_t node_id;
 } techrice_packet_t;
 
-/*
-These values will be provided by the API
-*/
-#define NODE_ID 6
+#define NODE_ID 2
 #define EDGE_ID BROADCAST_ADDR
-#define TEMPERATURE_SENSOR_ID 28
-#define HUMIDITY_SENSOR_ID 29
-#define BATTERY_SENSOR_ID 26
-#define SOLAR_SENSOR_ID 27
-#define SONAR_SENSOR_ID 30
+#define VSOL_SENSOR_ID 6
+#define VBAT_SENSOR_ID 7
+#define TEMPERATURE_SENSOR_ID 8
+#define HUMIDITY_SENSOR_ID 9
+#define DISTANCE_TO_WATER_SURFACE_SENSOR_ID 10
+
 
 techrice_packet_t r = {
+  {VSOL_SENSOR_ID,0},
+  {VBAT_SENSOR_ID,0},
   {TEMPERATURE_SENSOR_ID,0},
   {HUMIDITY_SENSOR_ID,0},
-  {BATTERY_SENSOR_ID,0},
-  {SOLAR_SENSOR_ID,0},
-  {SONAR_SENSOR_ID,0},
+  {DISTANCE_TO_WATER_SURFACE_SENSOR_ID,0},
   0,
   0,
   "",
   NODE_ID
 };
+
+/*
+END OF OF API-GENERATED HEADER
+*/
+
+
+
 
 
 #define RTC_CLOCK_SOURCE 0b11 // Selects the clock source. 0b11 selects 1/60Hz clock.
@@ -238,11 +248,11 @@ void loop()
 
   digitalWrite(sonarAwakePin, HIGH);
   get_temp(r.temperature.value, r.humidity.value);
-  get_vbat(r.battery.value);
-  get_vsol(r.solar.value);
-  get_sonar(r.sonar.value);
+  get_vbat(r.vbat.value);
+  get_vsol(r.vsol.value);
+  get_sonar(r.distance_to_water_surface.value);
   delay(1000);
-  get_sonar(r.sonar.value);
+  get_sonar(r.distance_to_water_surface.value);
   /*if(r.sonar.value>10){
     digitalWrite(sonarAwakePin, LOW);
   }
@@ -257,15 +267,15 @@ void loop()
   Serial.println(sbuf);
 
   
-  sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
+  sprintf(sbuf, "Node_id: %d, cozunt: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
                 (int) r.node_id,
                 (int) r.count, 
                 (int) r.timestamp,
                 (int) r.temperature.sensor_id, (int) r.temperature.value,
                 (int) r.humidity.sensor_id, (int) r.humidity.value,
-                (int) r.battery.sensor_id, (int) r.battery.value,
-                (int) r.solar.sensor_id, (int) r.solar.value,
-                (int) r.sonar.sensor_id, (int) r.sonar.value);
+                (int) r.vbat.sensor_id, (int) r.vbat.value,
+                (int) r.vsol.sensor_id, (int) r.vsol.value,
+                (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
   Serial.println(sbuf);
   chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
   free(sbuf);

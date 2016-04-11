@@ -120,6 +120,17 @@ techrice_packet_t r = {
 from jinja2.filters import do_capitalize
 class Header(object):
 	template = """
+/*
+START OF API-GENERATED HEADER
+*/
+
+typedef struct{
+  int32_t sensor_id;
+  int32_t value;
+} reading_t;
+
+
+
 typedef struct{
   {% for sensor in sensors -%}
   reading_t {{sensor['name']}};
@@ -128,23 +139,28 @@ typedef struct{
   int32_t signal_strength;
   char timestamp[19];
   int32_t node_id;
-} packet_t;
+} techrice_packet_t;
 
-#define NODE_ID {{node_id}};
-#define EDGE_ID BROADCAST_ADDR;
+#define NODE_ID {{node_id}}
+#define EDGE_ID BROADCAST_ADDR
 {% for sensor in sensors -%}
-#define {{sensor['name']|upper}}_SENSOR_ID {{sensor['id']}};
+#define {{sensor['name']|upper}}_SENSOR_ID {{sensor['id']}}
 {% endfor %}
 
 techrice_packet_t r = {
   {% for sensor in sensors -%}
-  {%raw%}{{%endraw%}{{sensor['name']|upper}}_SENSOR_ID{%raw%}}, 0{%endraw%},
+  {%raw%}{{%endraw%}{{sensor['name']|upper}}_SENSOR_ID{%raw%},0}{%endraw%},
   {% endfor -%}
   0,
   0,
   "",
   NODE_ID
 };
+
+/*
+END OF OF API-GENERATED HEADER
+*/
+
 """
 
 	@staticmethod
