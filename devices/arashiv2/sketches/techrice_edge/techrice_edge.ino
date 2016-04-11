@@ -33,7 +33,7 @@ char server[] = "api.techrice.jp";
 const int port = 80;
 
 // Set the static IP address to use if the DHCP fails to assign
-IPAddress ip(192, 168, 1, random(100,200));
+//IPAddress ip(192, 168, 1, random(100,200));
 
 // Initialize the Ethernet client library
 // with the IP address and port of the server
@@ -65,6 +65,11 @@ typedef struct{
   int32_t node_id;
 } techrice_packet_t;
 
+typedef struct{
+    int8_t type;
+    char *payload;
+  } packet_t;
+
 
 
 
@@ -73,7 +78,21 @@ int lastConnection = millis();
 void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(57600);
+
+  techrice_packet_t r = {
+    {1,0},
+    {1,0},
+    {1,0},
+    {1,0},
+    {1,0},
+    0,
+    0,
+    "",
+    NODE_ID
+  };
+
   
+  packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
 //  Ethernet.begin(mac, ip);
@@ -81,9 +100,13 @@ void setup() {
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
     // no point in carrying on, so do nothing forevermore:
-    // try to congifure using IP address instead of DHCP:
-    Ethernet.begin(mac, ip);
+    for (;;)
+      ;
   }
+  // print your local IP address:
+  printIPAddress();
+  
+
   
   Serial.println("Init chibi stack");
   chibiInit();
@@ -152,6 +175,17 @@ void api_post(char *http_body){
   }
 }
 
+void printIPAddress()
+{
+  Serial.print("My IP address: ");
+  for (byte thisByte = 0; thisByte < 4; thisByte++) {
+    // print the value of each byte of the IP address:
+    Serial.print(Ethernet.localIP()[thisByte], DEC);
+    Serial.print(".");
+  }
+
+  Serial.println();
+}
 
   
 
