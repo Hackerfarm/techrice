@@ -14,6 +14,16 @@
 START OF API-GENERATED HEADER
 */
 
+
+#define TIME_PACKET 0
+#define TECHRICE_PACKET 1
+
+typedef struct{
+  int8_t type;
+  char *payload;
+} packet_t;
+
+
 typedef struct{
   int32_t sensor_id;
   int32_t value;
@@ -53,6 +63,8 @@ techrice_packet_t r = {
   "",
   NODE_ID
 };
+
+
 
 /*
 END OF OF API-GENERATED HEADER
@@ -261,6 +273,10 @@ void loop()
   }*/
   r.count++;
   get_timestamp(r.timestamp);
+
+  
+  packet_t packet = {TECHRICE_PACKET, (char*) &r};
+
 
   char sbuf[SBUF_SIZE];
   sprintf(sbuf, "Port: %d Bit: %d",digitalPinToPort(hgmPin), digitalPinToBitMask(hgmPin));

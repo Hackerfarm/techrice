@@ -125,11 +125,14 @@ START OF API-GENERATED HEADER
 */
 
 typedef struct{
+    int8_t type;
+    char *payload;
+} packet_t;
+
+typedef struct{
   int32_t sensor_id;
   int32_t value;
 } reading_t;
-
-
 
 typedef struct{
   {% for sensor in sensors -%}
