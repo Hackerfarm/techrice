@@ -92,7 +92,6 @@ void loop()
 {
   if (chibiDataRcvd() == true)
   { 
-    
     int rssi, src_addr;
     len = chibiGetData(buf);
     if (len == 0) return;
@@ -100,43 +99,36 @@ void loop()
     // retrieve the data and the signal strength
     rssi = chibiGetRSSI();
     src_addr = chibiGetSrcAddr();
-    
-
-    
+        
     if (len)
     {
       packet_t request = *((packet_t*)(buf));
       print_packet_info(len, src_addr, rssi, request);
 
+      switch (request.type) {
+          case CURRENT_TIME_REQUEST:
+            datetime_t now = {2016};
+            packet_t response = init_packet(CURRENT_TIME_RESPONSE, &now);
+            chibiTx(src_addr, (uint8_t*)(&response), sizeof(response));
+            Serial.println("Response sent");
+            break;
+          case TECHRICE_PACKET:
+            techrice_packet_t p = *((techrice_packet_t*)(request.payload));
+            p.signal_strength = rssi;
+            p.node_id = src_addr;
+            char http_body[300];
 
-      if(request.type == CURRENT_TIME_REQUEST){
-        
-        // packet_t response;
-        // response.type = CURRENT_TIME_RESPONSE;
-        datetime_t now = {2016};
-        // memcpy(response.payload, &now, sizeof(now));
-
-        packet_t response = init_packet(CURRENT_TIME_RESPONSE, &now);
-        chibiTx(src_addr, (uint8_t*)(&response), sizeof(response));
-        Serial.println("Response sent");
-      } else if (request.type == TECHRICE_PACKET){
-        
-        techrice_packet_t p = *((techrice_packet_t*)(request.payload));
-
-        // Serial.print("data:");
-        // Serial.println(packet.payload);
-        p.signal_strength = rssi;
-        p.node_id = NODE_ID;
-        char http_body[300];
-
-        sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
-                  (int) p.temperature.sensor_id, (int) p.temperature.value,
-                  (int) p.humidity.sensor_id, (int) p.humidity.value,
-                  (int) p.battery.sensor_id, (int) p.battery.value,
-                  (int) p.solar.sensor_id, (int) p.solar.value,
-                  (int) p.sonar.sensor_id, (int) p.sonar.value);
-        Serial.print("data: ");
-        Serial.println(http_body);
+            sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
+                      (int) p.temperature.sensor_id, (int) p.temperature.value,
+                      (int) p.humidity.sensor_id, (int) p.humidity.value,
+                      (int) p.battery.sensor_id, (int) p.battery.value,
+                      (int) p.solar.sensor_id, (int) p.solar.value,
+                      (int) p.sonar.sensor_id, (int) p.sonar.value);
+            Serial.print("data: ");
+            Serial.println(http_body);
+            break;
+          default:
+            break;
       }
     }
   }
