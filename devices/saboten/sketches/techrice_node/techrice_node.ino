@@ -15,14 +15,18 @@ START OF API-GENERATED HEADER
 */
 
 
-#define TIME_PACKET 0
-#define TECHRICE_PACKET 1
+#define CURRENT_TIME_REQUEST 0
+#define CURRENT_TIME_RESPONSE 1
+#define TECHRICE_PACKET 2
 
 typedef struct{
   int8_t type;
-  char *payload;
+  char payload[80];
 } packet_t;
 
+typedef struct{
+  uint32_t year;
+} datetime_t;
 
 typedef struct{
   int32_t sensor_id;
@@ -114,15 +118,6 @@ static FILE uartout = {0};
 PCF2127 pcf(0, 0, 0, rtcCsPin);
 
 
-
-
-
-
-
-
-
-
-
 void setup()
 {    
   uint8_t i, sdDetect;
@@ -132,8 +127,6 @@ void setup()
   // The uart is the standard output device STDOUT.
   stdout = &uartout ;
 
-  
-  
   old[0] = 3;
   
   // set up high gain mode pin
@@ -245,7 +238,7 @@ void setup()
   // high gain mode
   digitalWrite(hgmPin, HIGH);
 
-  
+  request_time();  
 }
 
 /**************************************************************************/
@@ -275,7 +268,7 @@ void loop()
   get_timestamp(r.timestamp);
 
   
-  packet_t packet = {TECHRICE_PACKET, (char*) &r};
+  // packet_t packet = {TECHRICE_PACKET, (char*) &r};
 
 
   char sbuf[SBUF_SIZE];
@@ -293,7 +286,12 @@ void loop()
                 (int) r.vsol.sensor_id, (int) r.vsol.value,
                 (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
   Serial.println(sbuf);
-  chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
+
+
+  packet_t request = init_packet(TECHRICE_PACKET, &r);
+  Serial.print("payload size: ");
+  Serial.println(sizeof(request.payload));
+  chibiTx(EDGE_ID, (unsigned char*)(&request), sizeof(request));
   free(sbuf);
   sleep_mcu();
 }
@@ -903,4 +901,82 @@ static int uart_putchar (char c, FILE *stream)
 }
 
 
+
+int request_time(){
+  Serial.println("Sending request for current time");
+  packet_t request = init_packet(CURRENT_TIME_REQUEST, (void *)0);
+  chibiTx(EDGE_ID, (uint8_t*)(&request), sizeof(request));
+  free(&request);
+
+  while(!chibiDataRcvd()); // Wait forever until response
+  
+  int rssi, src_addr;
+  int len = chibiGetData(buf);
+  if (len == 0) return 0;
+
+  // retrieve the data and the signal strength
+  rssi = chibiGetRSSI();
+  src_addr = chibiGetSrcAddr();
+  
+  packet_t response = *((packet_t*)(buf));
+  print_packet_info(len, src_addr, rssi, response);
+  // datetime_t now = *((datetime_t*)(response.payload));
+  if(len){
+    if(response.type == CURRENT_TIME_RESPONSE){
+       datetime_t now = *((datetime_t*)(response.payload));
+        Serial.print("time now: ");
+        Serial.println(now.year);
+    }
+    // switch (response.type) {
+    //   case CURRENT_TIME_RESPONSE:
+    //     // do something
+    //     datetime_t now = *((datetime_t*)(response.payload));
+    //     Serial.print("time now: ");
+    //     Serial.println(now.year);
+    //     break;
+    //   default:
+    //     Serial.print("Expected CURRENT_TIME_RESPONSE, but got ");        
+    //     Serial.println(response.type);
+    //     break;
+    //     // do something
+    // }
+  }
+  delay(2000);
+}
+
+
+void print_packet_info(int len, int src_addr, int rssi, packet_t packet){
+  Serial.println();
+  Serial.print(millis());
+  Serial.print(", Packet from: ");
+  Serial.print(src_addr);
+  Serial.print(", len: ");
+  Serial.print(len);
+  Serial.print(", signal strength: ");
+  Serial.print(rssi);
+  Serial.print(" , packet type: ");
+  Serial.print(packet.type);
+  Serial.print(", payload size: ");
+  Serial.println(sizeof(packet.payload));  
+}
+
+
+
+packet_t init_packet(int type, void *payload){
+  packet_t packet;
+  packet.type = type;
+  switch (type) {
+      case CURRENT_TIME_REQUEST:
+        break; // no payload to be copied
+      case CURRENT_TIME_RESPONSE:
+        memcpy(packet.payload, payload, sizeof(datetime_t));
+        break;
+      case TECHRICE_PACKET:
+        memcpy(packet.payload, payload, sizeof(techrice_packet_t));
+        break;
+      default:
+        break;
+  }
+  return packet;
+}
 
