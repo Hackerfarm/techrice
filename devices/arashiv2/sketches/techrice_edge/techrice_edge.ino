@@ -44,21 +44,6 @@ EthernetClient client;
 /*
 This struct will be common for all nodes
 */
-
-#define CURRENT_TIME_REQUEST 0
-#define CURRENT_TIME_RESPONSE 1
-#define TECHRICE_PACKET 2
-
-typedef struct{
-  int8_t type;
-  char payload[80];
-} packet_t;
-
-typedef struct{
-  uint32_t year;
-} datetime_t;
-
-
 typedef struct{
   int32_t sensor_id;
   int32_t value;
@@ -80,6 +65,10 @@ typedef struct{
   int32_t node_id;
 } techrice_packet_t;
 
+typedef struct{
+    int8_t type;
+    char *payload;
+  } packet_t;
 
 
 
@@ -90,20 +79,20 @@ void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(57600);
 
-  // techrice_packet_t r = {
-  //   {1,0},
-  //   {1,0},
-  //   {1,0},
-  //   {1,0},
-  //   {1,0},
-  //   0,
-  //   0,
-  //   "",
-  //   NODE_ID
-  // };
+  techrice_packet_t r = {
+    {1,0},
+    {1,0},
+    {1,0},
+    {1,0},
+    {1,0},
+    0,
+    0,
+    "",
+    NODE_ID
+  };
 
   
-  // packet_t p = {1, (char*)&r};
+  packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
 //  Ethernet.begin(mac, ip);
@@ -134,53 +123,34 @@ void setup() {
 void loop()
 {
   Ethernet.maintain();
-
   if (chibiDataRcvd() == true)
   { 
     int rssi, src_addr;
     len = chibiGetData(buf);
     if (len == 0) return;
-
+    
     // retrieve the data and the signal strength
     rssi = chibiGetRSSI();
     src_addr = chibiGetSrcAddr();
-        
+    Serial.println(len);
+    Serial.print("Signal strength: ");
+    Serial.println(rssi);
     if (len)
     {
-      packet_t request = *((packet_t*)(buf));
-      print_packet_info(len, src_addr, rssi, request);
+      techrice_packet_t p = *((techrice_packet_t*)(buf));
+      p.signal_strength = rssi;
+      p.node_id = NODE_ID;
+      char http_body[300];
 
-      switch (request.type) {
-          case CURRENT_TIME_REQUEST:{
-              datetime_t now = {2016};
-              packet_t response = init_packet(CURRENT_TIME_RESPONSE, &now);
-              chibiTx(src_addr, (uint8_t*)(&response), sizeof(response));
-              Serial.println("Response sent");
-            }
-            break;
-          case TECHRICE_PACKET:{
-              techrice_packet_t p = *((techrice_packet_t*)(request.payload));
-              p.signal_strength = rssi;
-              p.node_id = src_addr;
-              char http_body[300];
-
-              sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
-                        (int) p.temperature.sensor_id, (int) p.temperature.value,
-                        (int) p.humidity.sensor_id, (int) p.humidity.value,
-                        (int) p.battery.sensor_id, (int) p.battery.value,
-                        (int) p.solar.sensor_id, (int) p.solar.value,
-                        (int) p.sonar.sensor_id, (int) p.sonar.value);
-              Serial.print("data: ");
-              Serial.println(http_body);
-              api_post(http_body);
-            }
-            break;
-          default:
-            break;
-      }
+    sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
+                (int) p.temperature.sensor_id, (int) p.temperature.value,
+                (int) p.humidity.sensor_id, (int) p.humidity.value,
+                (int) p.battery.sensor_id, (int) p.battery.value,
+                (int) p.solar.sensor_id, (int) p.solar.value,
+                (int) p.sonar.sensor_id, (int) p.sonar.value);
+      api_post(http_body);
     }
   }
-
   client.stop();
 }
 
@@ -217,39 +187,6 @@ void printIPAddress()
   Serial.println();
 }
 
-void print_packet_info(int len, int src_addr, int rssi, packet_t packet){
-  Serial.println();
-  Serial.print(millis());
-  Serial.print(", Packet from: ");
-  Serial.print(src_addr);
-  Serial.print(", len: ");
-  Serial.print(len);
-  Serial.print(", signal strength: ");
-  Serial.print(rssi);
-  Serial.print(" , packet type: ");
-  Serial.print(packet.type);
-  Serial.print(", payload size: ");
-  Serial.println(sizeof(packet.payload));  
-}
-
-packet_t init_packet(int type, void *payload){
-  packet_t packet;
-  packet.type = type;
-  switch (type) {
-      case CURRENT_TIME_REQUEST:
-        break; // no payload to be copied
-      case CURRENT_TIME_RESPONSE:
-        memcpy(packet.payload, payload, sizeof(datetime_t));
-        break;
-      case TECHRICE_PACKET:
-        memcpy(packet.payload, payload, sizeof(techrice_packet_t));
-        break;
-      default:
-        break;
-  }
-  return packet;
-}
-
-
+  
 
 
