@@ -39,39 +39,6 @@ from app import db
 from sqlalchemy.exc import IntegrityError
 
 class TechRice(object):
-	header = """
-typedef struct{
-  reading_t temperature;
-  reading_t humidity;
-  reading_t battery;
-  reading_t solar;
-  int32_t count;
-  int32_t signal_strength;
-  char timestamp[19];
-  int32_t node_id;
-} techrice_packet_t;
-
-/*
-These values will be provided by the API
-*/
-#define NODE_ID {{ node_id }}
-#define TEMPERATURE_SENSOR_ID {{ temperature_sensor_id }}
-#define HUMIDITY_SENSOR_ID {{ humidity_sensor_id }}
-#define BATTERY_SENSOR_ID {{ battery_sensor_id }}
-#define SOLAR_SENSOR_ID {{ solar_sensor_id }}
-#define SONAR_SENSOR_ID {{ sonar_sensor_id }}
-
-techrice_packet_t r = {
-  {TEMPERATURE_SENSOR_ID,0}, 
-  {HUMIDITY_SENSOR_ID,0},
-  {BATTERY_SENSOR_ID,0}, 
-  {SOLAR_SENSOR_ID,0},
-  0,
-  0,
-  "",
-  NODE_ID
-};
-"""
 	@staticmethod
 	def seed_nodetypes():
 		try:
@@ -102,13 +69,8 @@ techrice_packet_t r = {
 		humidity = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'DHT11 humidity').first(), name = 'humidity')
 		sonar = Sensor.create(node = node, sensortype = SensorType.query.filter_by(name = 'sonar HC SR-04').first(), name = 'sonar')
 
-		header = Template(TechRice.header).render(**{
-		  'node_id': node.id,
-		  'temperature_sensor_id': temperature.id,
-		  'humidity_sensor_id':humidity.id,
-		  'battery_sensor_id': battery.id,
-		  'solar_sensor_id': solar.id,
-		  'sonar_sensor_id': sonar.id})
+		header = Header.get_header(node_id = node.id)
+		print header
 
 		return {
 			'node': 'name: {}, id: {}, longitude: {}, latitude: {}'.format(node.name, node.id, node.longitude, node.latitude),
@@ -125,11 +87,14 @@ START OF API-GENERATED HEADER
 */
 
 typedef struct{
+    int8_t type;
+    char *payload;
+} packet_t;
+
+typedef struct{
   int32_t sensor_id;
   int32_t value;
 } reading_t;
-
-
 
 typedef struct{
   {% for sensor in sensors -%}
