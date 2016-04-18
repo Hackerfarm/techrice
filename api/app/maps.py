@@ -34,6 +34,6 @@ def make_map(nodes):
 		longitude = node.longitude, 
 		latitude = node.latitude, 
 		infowindow = '{} (id {})'.format(node.name, node.id), 
-		click_redirect = '/chart/weekly/node/{}'.format(node.id)
+		click_redirect = '/graph/node/{}'.format(node.id)
 		) for node in nodes]
 	return Markup(render_template("gmap.html", markers = markers))
