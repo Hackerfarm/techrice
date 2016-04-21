@@ -1,4 +1,5 @@
 #include <avr/sleep.h>
+#include <avr/time.h>
 #include <avr/power.h>
 #include <avr/wdt.h>
 #include <chibi.h>
@@ -8,12 +9,9 @@
 #include <pcf2127.h>
 #include <stdint.h>
 
-
-
 /*
 START OF API-GENERATED HEADER
 */
-
 
 #define CURRENT_TIME_REQUEST 0
 #define CURRENT_TIME_RESPONSE 1
@@ -32,7 +30,6 @@ typedef struct{
   int32_t sensor_id;
   int32_t value;
 } reading_t;
-
 
 
 typedef struct{
@@ -238,6 +235,7 @@ void setup()
   // high gain mode
   digitalWrite(hgmPin, HIGH);
 
+  delay(1000);
   request_time();  
 }
 
@@ -287,7 +285,8 @@ void loop()
                 (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
   Serial.println(sbuf);
 
-
+  Serial.print("timestamp: ");
+  Serial.println(r.timestamp);
   packet_t request = init_packet(TECHRICE_PACKET, &r);
   Serial.print("payload size: ");
   Serial.println(sizeof(request.payload));
@@ -908,6 +907,8 @@ int request_time(){
   chibiTx(EDGE_ID, (uint8_t*)(&request), sizeof(request));
   free(&request);
 
+
+
   while(!chibiDataRcvd()); // Wait forever until response
   
   int rssi, src_addr;
@@ -920,28 +921,30 @@ int request_time(){
   
   packet_t response = *((packet_t*)(buf));
   print_packet_info(len, src_addr, rssi, response);
-  // datetime_t now = *((datetime_t*)(response.payload));
-  if(len){
-    if(response.type == CURRENT_TIME_RESPONSE){
-       datetime_t now = *((datetime_t*)(response.payload));
-        Serial.print("time now: ");
-        Serial.println(now.year);
+  switch (response.type) {
+    case CURRENT_TIME_RESPONSE:{
+      // do something
+      tm *now = (tm*)response.payload; 
+      Serial.print("time now: ");
+      Serial.println(now->tm_year);
+      Serial.println(now->tm_mon);
+      Serial.println(now->tm_mday);
+      Serial.println(now->tm_hour);
+      Serial.println(now->tm_min);
+      Serial.println(now->tm_sec);
+      set_RTC(now);
+      break;
     }
-    // switch (response.type) {
-    //   case CURRENT_TIME_RESPONSE:
-    //     // do something
-    //     datetime_t now = *((datetime_t*)(response.payload));
-    //     Serial.print("time now: ");
-    //     Serial.println(now.year);
-    //     break;
-    //   default:
-    //     Serial.print("Expected CURRENT_TIME_RESPONSE, but got ");        
-    //     Serial.println(response.type);
-    //     break;
-    //     // do something
-    // }
+    default:
+      break;
   }
   delay(2000);
+}
+
+void set_RTC(tm *datetime){
+  pcf.writeDate(datetime->tm_year, datetime->tm_mon + 1, datetime->tm_mday, datetime->tm_wday); // For months, the RTC uses 1-12 while struct tm and gmtime() use 0-11
+  pcf.writeTime(datetime->tm_hour, datetime->tm_min, datetime->tm_sec);
+
 }
 
 
@@ -969,7 +972,7 @@ packet_t init_packet(int type, void *payload){
       case CURRENT_TIME_REQUEST:
         break; // no payload to be copied
       case CURRENT_TIME_RESPONSE:
-        memcpy(packet.payload, payload, sizeof(datetime_t));
+        memcpy(packet.payload, payload, sizeof(tm));
         break;
       case TECHRICE_PACKET:
         memcpy(packet.payload, payload, sizeof(techrice_packet_t));
