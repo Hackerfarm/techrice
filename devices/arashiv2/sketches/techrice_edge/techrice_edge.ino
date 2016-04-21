@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <chibi.h>
+#include <avr/time.h>
 //#include "TimerOne.h"
 #define RX_BUFSIZE 300
 
@@ -127,10 +128,12 @@ void setup() {
   Serial.println("Getting time");
   time_t rawtime = ntpUnixTime(udp);
   // Serial.println(unixTime);
-
+  Serial.print("NTP time: ");
+  Serial.println(rawtime);
   // time_t rawtime = unixTime;
   struct tm *info;
   /* Get GMT time */
+
   info = gmtime(&rawtime);
   //printf("time: %d\n", rawtime);
 
@@ -169,8 +172,23 @@ void loop()
 
       switch (request.type) {
           case CURRENT_TIME_REQUEST:{
-              datetime_t now = {2016};
-              packet_t response = init_packet(CURRENT_TIME_RESPONSE, &now);
+              
+              time_t unixtime = 0;
+              while(!unixtime){
+                unixtime = ntpUnixTime(udp);
+                Serial.print("NTP time: ");
+                Serial.println(unixtime);  
+                delay(1000);
+              }
+              
+              // 1461215028;
+              tm *now = gmtime(&unixtime);
+              
+              Serial.println("Time now: ");
+              Serial.println(now->tm_year);
+              Serial.println(now->tm_mon);
+              Serial.println(now->tm_wday);
+              packet_t response = init_packet(CURRENT_TIME_RESPONSE, now);
               chibiTx(src_addr, (uint8_t*)(&response), sizeof(response));
               Serial.println("Response sent");
             }
@@ -364,7 +382,7 @@ packet_t init_packet(int type, void *payload){
       case CURRENT_TIME_REQUEST:
         break; // no payload to be copied
       case CURRENT_TIME_RESPONSE:
-        memcpy(packet.payload, payload, sizeof(datetime_t));
+        memcpy(packet.payload, payload, sizeof(tm));
         break;
       case TECHRICE_PACKET:
         memcpy(packet.payload, payload, sizeof(techrice_packet_t));
