@@ -153,7 +153,8 @@ int request_time(){
   chibiTx(EDGE_ID, (uint8_t*)(&request), sizeof(request));
   free(&request);
 
-  while(!chibiDataRcvd()); // Wait forever until response
+  long int wait_until = millis() + 10000;
+  while((millis() > wait_until) | (!chibiDataRcvd())); // Wait forever until response
   
   int rssi, src_addr;
   int len = chibiGetData(buf);
@@ -165,26 +166,19 @@ int request_time(){
   
   packet_t response = *((packet_t*)(buf));
   print_packet_info(len, src_addr, rssi, response);
-  // datetime_t now = *((datetime_t*)(response.payload));
   if(len){
-    if(response.type == CURRENT_TIME_RESPONSE){
-       datetime_t now = *((datetime_t*)(response.payload));
-        Serial.print("time now: ");
-        Serial.println(now.year);
+    switch (response.type) {
+        case CURRENT_TIME_RESPONSE:{
+          tm *now = (tm*) response.payload;
+          Serial.print("time now: ");
+          Serial.println(now->tm_year);
+          Serial.println(now->tm_mon);
+          Serial.println(now->tm_mday);
+          break;
+        }
+        default:
+          break;
     }
-    // switch (response.type) {
-    //   case CURRENT_TIME_RESPONSE:
-    //     // do something
-    //     datetime_t now = *((datetime_t*)(response.payload));
-    //     Serial.print("time now: ");
-    //     Serial.println(now.year);
-    //     break;
-    //   default:
-    //     Serial.print("Expected CURRENT_TIME_RESPONSE, but got ");        
-    //     Serial.println(response.type);
-    //     break;
-    //     // do something
-    // }
   }
   delay(2000);
 }
