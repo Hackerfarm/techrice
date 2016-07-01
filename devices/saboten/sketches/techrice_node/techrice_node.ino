@@ -155,7 +155,7 @@ void setup()
   digitalWrite(sonarAwakePin, HIGH);
 
   // set up the burst mode pin
-  pinMode(burstModePin, INPUT);
+  pinMode(burstModePin, INPUT_PULLUP);
 
   
   // Initialize the chibi command line and set the speed to 57600 bps
@@ -186,7 +186,8 @@ void setup()
   Serial.println(r.node_id);
 
 
-  init_sdcard();
+  // Should not be commented! Uncomment when fixed
+  //init_sdcard();
 
   /*
   // check for SD and init
@@ -267,7 +268,7 @@ void loop()
   Serial.println(sbuf);
 
   
-  sprintf(sbuf, "Node_id: %d, cozunt: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
+  sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
                 (int) r.node_id,
                 (int) r.count, 
                 (int) r.timestamp,

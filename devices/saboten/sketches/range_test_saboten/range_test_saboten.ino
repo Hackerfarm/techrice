@@ -9,6 +9,7 @@ int vsolPin = 29;
 int led_state = 1;
 
 #define ADCREFVOLTAGE 3.3
+#define NODE_ID 300
 
 void setup()
 {    
@@ -63,7 +64,7 @@ void loop()
 		{ digitalWrite(ledPin, LOW); }
 	else
 		{ digitalWrite(ledPin, HIGH); }
-	delay(500);
+	delay(1000);
 }
 
 // Gives a mV result

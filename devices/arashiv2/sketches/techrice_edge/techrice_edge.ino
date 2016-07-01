@@ -33,7 +33,7 @@ char server[] = "api.techrice.jp";
 const int port = 80;
 
 // Set the static IP address to use if the DHCP fails to assign
-//IPAddress ip(192, 168, 1, random(100,200));
+IPAddress ip(192, 168, 1, random(100,200));
 
 // Initialize the Ethernet client library
 // with the IP address and port of the server
@@ -54,10 +54,10 @@ typedef struct{
 This struct depends on the note type
 */
 typedef struct{
+  reading_t solar;
+  reading_t battery;
   reading_t temperature;
   reading_t humidity;
-  reading_t battery;
-  reading_t solar;
   reading_t sonar;
   int32_t count;
   int32_t signal_strength;
@@ -95,14 +95,14 @@ void setup() {
   packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
-//  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac, ip);
   
-  if (Ethernet.begin(mac) == 0) {
+  /*if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
     // no point in carrying on, so do nothing forevermore:
     for (;;)
       ;
-  }
+  }*/
   // print your local IP address:
   printIPAddress();
   
@@ -132,15 +132,18 @@ void loop()
     // retrieve the data and the signal strength
     rssi = chibiGetRSSI();
     src_addr = chibiGetSrcAddr();
+    Serial.print("Message length: ");
     Serial.println(len);
     Serial.print("Signal strength: ");
     Serial.println(rssi);
     if (len)
     {
+      
       techrice_packet_t p = *((techrice_packet_t*)(buf));
       p.signal_strength = rssi;
       p.node_id = NODE_ID;
       char http_body[300];
+      char msg[100];
 
     sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
                 (int) p.temperature.sensor_id, (int) p.temperature.value,
@@ -148,6 +151,12 @@ void loop()
                 (int) p.battery.sensor_id, (int) p.battery.value,
                 (int) p.solar.sensor_id, (int) p.solar.value,
                 (int) p.sonar.sensor_id, (int) p.sonar.value);
+    sprintf(msg, "VBAT:%d  VSOL:%d  SONAR:%d  TIMESTAMP:%s",
+                (int) p.battery.value,
+                (int) p.solar.value,
+                (int) p.sonar.value,
+                p.timestamp);
+    Serial.println(msg);
       api_post(http_body);
     }
   }
