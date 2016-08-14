@@ -17,6 +17,7 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <chibi.h>
+
 //#include "TimerOne.h"
 #define RX_BUFSIZE 300
 
@@ -95,14 +96,13 @@ void setup() {
   packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
-  Ethernet.begin(mac, ip);
   
-  /*if (Ethernet.begin(mac) == 0) {
+  
+  if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
     // no point in carrying on, so do nothing forevermore:
-    for (;;)
-      ;
-  }*/
+    Ethernet.begin(mac, ip);
+  }
   // print your local IP address:
   printIPAddress();
   
@@ -141,7 +141,7 @@ void loop()
       
       techrice_packet_t p = *((techrice_packet_t*)(buf));
       p.signal_strength = rssi;
-      p.node_id = NODE_ID;
+      //p.node_id = NODE_ID;
       char http_body[300];
       char msg[100];
 

@@ -8,6 +8,10 @@
 #include <pcf2127.h>
 #include <stdint.h>
 
+#include <src/chb_eeprom.h>
+
+// void chb_eeprom_write(U16 addr, U8 *buf, U16 size)
+// void chb_eeprom_read(U16 addr, U8 *buf, U16 size)
 
 
 /*
