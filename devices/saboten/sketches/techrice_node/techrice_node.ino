@@ -4,7 +4,6 @@
 #include <chibi.h>
 #include <Wire.h>
 #include <SPI.h>
-#include <SdFat.h>
 #include <pcf2127.h>
 #include <stdint.h>
 
@@ -12,11 +11,6 @@
 
 // void chb_eeprom_write(U16 addr, U8 *buf, U16 size)
 // void chb_eeprom_read(U16 addr, U8 *buf, U16 size)
-
-
-/*
-START OF API-GENERATED HEADER
-*/
 
 typedef struct{
   int32_t sensor_id;
@@ -37,7 +31,8 @@ typedef struct{
   int32_t node_id;
 } techrice_packet_t;
 
-#define NODE_ID 2
+
+#define NODE_ID 12
 #define EDGE_ID BROADCAST_ADDR
 #define VSOL_SENSOR_ID 6
 #define VBAT_SENSOR_ID 7
@@ -46,7 +41,7 @@ typedef struct{
 #define DISTANCE_TO_WATER_SURFACE_SENSOR_ID 10
 
 
-techrice_packet_t r = {
+techrice_packet_t main_packet = {
   {VSOL_SENSOR_ID,0},
   {VBAT_SENSOR_ID,0},
   {TEMPERATURE_SENSOR_ID,0},
@@ -69,10 +64,9 @@ END OF OF API-GENERATED HEADER
 #define RTC_CLOCK_SOURCE 0b11 // Selects the clock source. 0b11 selects 1/60Hz clock.
 #define RTC_SLEEP 30 // Number of timer clock cycles before interrupt is generated.
 
-
-SdFat sd;
-SdFile myFile;
 #define SBUF_SIZE 200 //Note that due to inefficient implementation of sd_write() the memory footprint is actually twice of this value. 
+
+#define EEPROM_CONF_ADDR 0x12
 
 #define DATECODE "08-09-2014"
 #define TITLE "SABOTEN 900 MHz Long Range\n"
@@ -92,11 +86,9 @@ int sonarEchoPin = 7;
 int sonarAwakePin = 10;
 int burstModePin = 4;
 
+int debug_mode = 0;
 
 // Pins that will not interfer with the SPI: 2 to 5, 7 to 10 + 14 and 15
-
-int dupe_cnt = 0;
-unsigned char old[100];
 
 unsigned char buf[100];
 
@@ -117,16 +109,11 @@ PCF2127 pcf(0, 0, 0, rtcCsPin);
 
 void setup()
 {    
-  uint8_t i, sdDetect;
   // fill in the UART file descriptor with pointer to writer.
   fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
   
   // The uart is the standard output device STDOUT.
   stdout = &uartout ;
-
-  
-  
-  old[0] = 3;
   
   // set up high gain mode pin
   pinMode(hgmPin, OUTPUT);
@@ -187,32 +174,8 @@ void setup()
   chibiSetShortAddr(NODE_ID);
 
   Serial.print("NODE_ID: ");
-  Serial.println(r.node_id);
+  Serial.println(main_packet.node_id);
 
-
-  // Should not be commented! Uncomment when fixed
-  //init_sdcard();
-
-  /*
-  // check for SD and init
-  sdDetect = digitalRead(sdDetectPin);
-  if (sdDetect == 0)
-  {
-    // init the SD card
-    if (!sd.begin(sdCsPin)) 
-    {
-      
-      Serial.println("Card failed, or not present");
-      sd.initErrorHalt();
-      return;
-    }
-    printf("SD Card is initialized.\n");
-  }
-  else
-  {
-    printf("No SD card detected.\n");
-  }
-  */
 
   // This is where you declare the commands for the command line.
   // The first argument is the alias you type in the command line. The second
@@ -226,18 +189,22 @@ void setup()
   chibiCmdAdd("wr", cmd_reg_write);   // send the string typed into the command line
   chibiCmdAdd("slr", cmdSleepRadio);
   chibiCmdAdd("slm", cmdSleepMcu);
-  chibiCmdAdd("sdw", cmdSdWrite);
   chibiCmdAdd("time", cmdWriteTime);
   chibiCmdAdd("date", cmdWriteDate);
   chibiCmdAdd("rdt", cmdReadDateTime);
   chibiCmdAdd("bat", cmdVbatRead);
   chibiCmdAdd("sol", cmdVsolRead);
-  
   chibiCmdAdd("tmp", cmdReadTemp);
+  chibiCmdAdd("start", cmdStartCycle);
+  chibiCmdAdd("rconf", cmdReadConf);
+  chibiCmdAdd("wconf", cmdWriteConf);
   
   // high gain mode
   digitalWrite(hgmPin, HIGH);
-
+  if(digitalRead(burstModePin)==LOW){
+    debug_mode = 1;
+    digitalWrite(sonarAwakePin, HIGH);
+  }
   
 }
 
@@ -246,26 +213,29 @@ void setup()
 /**************************************************************************/
 void loop()
 {
-  static int count = 0;
+  if(debug_mode==1){
+    if(digitalRead(burstModePin)==HIGH){
+      debug_mode = 0;
+    }
+    chibiCmdPoll();
+    return;
+  }
   
-  // This function checks the command line to see if anything new was typed.
-//  chibiCmdPoll();
-
   digitalWrite(sonarAwakePin, HIGH);
-  get_temp(r.temperature.value, r.humidity.value);
-  get_vbat(r.vbat.value);
-  get_vsol(r.vsol.value);
-  get_sonar(r.distance_to_water_surface.value);
+  get_temp(main_packet.temperature.value, main_packet.humidity.value);
+  get_vbat(main_packet.vbat.value);
+  get_vsol(main_packet.vsol.value);
+  get_sonar(main_packet.distance_to_water_surface.value);
   delay(1000);
-  get_sonar(r.distance_to_water_surface.value);
+  get_sonar(main_packet.distance_to_water_surface.value);
   /*if(r.sonar.value>10){
     digitalWrite(sonarAwakePin, LOW);
   }
   else{
     digitalWrite(sonarAwakePin, HIGH);
   }*/
-  r.count++;
-  get_timestamp(r.timestamp);
+  main_packet.count++;
+  get_timestamp(main_packet.timestamp);
 
   char sbuf[SBUF_SIZE];
   sprintf(sbuf, "Port: %d Bit: %d",digitalPinToPort(hgmPin), digitalPinToBitMask(hgmPin));
@@ -273,16 +243,16 @@ void loop()
 
   
   sprintf(sbuf, "Node_id: %d, count: %d, timestamp: %19s, id %d: %dC (temperature), id %d: %d (humidity), id %d: %dmV (battery), id %d: %dmV (solar), id %d: %d cm (water level)", 
-                (int) r.node_id,
-                (int) r.count, 
-                (int) r.timestamp,
-                (int) r.temperature.sensor_id, (int) r.temperature.value,
-                (int) r.humidity.sensor_id, (int) r.humidity.value,
-                (int) r.vbat.sensor_id, (int) r.vbat.value,
-                (int) r.vsol.sensor_id, (int) r.vsol.value,
-                (int) r.distance_to_water_surface.sensor_id, (int) r.distance_to_water_surface.value);
+                (int) main_packet.node_id,
+                (int) main_packet.count, 
+                (int) main_packet.timestamp,
+                (int) main_packet.temperature.sensor_id, (int) main_packet.temperature.value,
+                (int) main_packet.humidity.sensor_id, (int) main_packet.humidity.value,
+                (int) main_packet.vbat.sensor_id, (int) main_packet.vbat.value,
+                (int) main_packet.vsol.sensor_id, (int) main_packet.vsol.value,
+                (int) main_packet.distance_to_water_surface.sensor_id, (int) main_packet.distance_to_water_surface.value);
   Serial.println(sbuf);
-  chibiTx(EDGE_ID, (unsigned char*)(&r), sizeof(r));
+  chibiTx(EDGE_ID, (unsigned char*)(&main_packet), sizeof(main_packet));
   free(sbuf);
   sleep_mcu();
 }
@@ -353,73 +323,6 @@ void sleep_mcu(){
   delay(5000);
 }
 
-void init_sdcard(){
-  // set up sd card detect
-  pinMode(sdDetectPin, INPUT);
-  digitalWrite(sdDetectPin, HIGH);
-  delay(1000);
-  // check for SD and init
-  int sdDetect = digitalRead(sdDetectPin);
-  // Serial.println(sdDetect);
-  if (sdDetect == 0){
-    // init the SD card
-    if (!sd.begin(sdCsPin)){
-      
-      Serial.println("Card failed, or not present");
-      sd.initErrorHalt();
-      return;
-    }
-    Serial.println("SD Card is initialized.\n");
-  }
-  else{
-    Serial.println("No SD card detected.\n");
-  }
-
-}
-
-
-void sd_write(char *buffer){    
-    int open_success = myFile.open(FILENAME, O_RDWR | O_CREAT | O_AT_END);
-    if (open_success){
-      
-      char data[SBUF_SIZE];
-      strcpy(data, (char*) buffer);
-      Serial.println("Writing data to SD card ");
-      myFile.println(data);
-
-      // int tmp=0;
-      // while (*buffer) {
-      //   *buffer++;
-      //   tmp++;
-      // }
-      // Serial.println("buffer length:");
-      // Serial.println(tmp);
-      // Serial.println(buffer);
-      
-      // char *hum = "hej msad\n\0";
-      // int tmp2=0;
-      // while (*hum) {
-      //   *hum++;
-      //   tmp2++;
-      // }
-      // Serial.println(tmp2);
-      // myFile.write(hum, tmp2 + 10);
-
-      // myFile.write(buffer, tmp);
-
-      // myFile.write((unsigned char*) buffer, tmp);
-
-      myFile.close();
-      Serial.println("Closed file");
-     
-    }
-    else{
-      Serial.println("Error opening dataFile");
-    }
-}
-
-
-
 
 void get_timestamp(char tbuf[19])
 {
@@ -485,6 +388,18 @@ void cmdSetShortAddr(int arg_cnt, char **args)
 
 /**************************************************************************/
 /*!
+    Instructs the board to leave the debug mode and start the regular power
+    cycle
+    Usage: start
+*/
+/**************************************************************************/
+void cmdStartCycle(int arg_cnt, char **args)
+{
+  debug_mode = 0;
+}
+
+/**************************************************************************/
+/*!
     Transmit data to another node wirelessly using Chibi stack. Currently
     only handles ASCII string payload
     Usage: send <addr> <string...>
@@ -502,6 +417,57 @@ void cmdSend(int arg_cnt, char **args)
     // the specified address
     len = strCat((char *)data, 2, arg_cnt, args);    
     chibiTx(addr, data,len);
+}
+
+/**************************************************************************/
+/*!
+    Reads the configuration of the node's ids in the eeprom and prints it.
+    Each id is a 32 unsigned integer, taking 4 bytes.
+    Usage: rconf
+*/
+/**************************************************************************/
+void cmdReadConf(int arg_cnt, char** args)
+{
+  uint16_t addr = EEPROM_CONF_ADDR;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.node_id)), 4); addr+=4;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.vsol.sensor_id)), 4); addr+=4;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.vbat.sensor_id)), 4); addr+=4;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.temperature.sensor_id)), 4); addr+=4;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.humidity.sensor_id)), 4); addr+=4;
+  chb_eeprom_read(addr, (U8 *)(&(main_packet.distance_to_water_surface.sensor_id)), 4); addr+=4;
+  char sbuf[SBUF_SIZE];
+  sprintf(sbuf, "Node_id: %d\n\r  vsol_id: %d\n\r  vbat_id: %d\n\r  temperature_id: %d\n\r  humidity_id: %d\n\r  sonar_id: %d", 
+                (int) main_packet.node_id,
+                (int) main_packet.vsol.sensor_id,
+                (int) main_packet.vbat.sensor_id,
+                (int) main_packet.temperature.sensor_id,
+                (int) main_packet.humidity.sensor_id,
+                (int) main_packet.distance_to_water_surface.sensor_id);
+  Serial.println(sbuf);
+}
+
+/**************************************************************************/
+/*!
+    Writes the configuration of the node's ids in the eeprom and prints it.
+    Each id is a 32 unsigned integer, taking 4 bytes.
+    Usage: wconf node_id vsol_id vbat_id temperature_id humidity_id sonar_id
+*/
+/**************************************************************************/
+void cmdWriteConf(int arg_cnt, char** args)
+{
+  main_packet.node_id =           strtol(args[1], NULL, 10);
+  main_packet.vsol.sensor_id =    strtol(args[2], NULL, 10);
+  main_packet.vbat.sensor_id =    strtol(args[3], NULL, 10);
+  main_packet.temperature.sensor_id =               strtol(args[4], NULL, 10);
+  main_packet.humidity.sensor_id =                  strtol(args[5], NULL, 10);
+  main_packet.distance_to_water_surface.sensor_id = strtol(args[6], NULL, 10);
+  uint16_t addr = EEPROM_CONF_ADDR;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.node_id)), 4); addr+=4;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.vsol.sensor_id)), 4); addr+=4;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.vbat.sensor_id)), 4); addr+=4;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.temperature.sensor_id)), 4); addr+=4;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.humidity.sensor_id)), 4); addr+=4;
+  chb_eeprom_write(addr, (U8 *)(&(main_packet.distance_to_water_surface.sensor_id)), 4); addr+=4;
 }
 
 /**************************************************************************/
@@ -543,30 +509,6 @@ void cmdVsolRead(int arg_cnt, char **args)
   Serial.print("Solar voltage: "); Serial.println((float)(s/1000.0), 1);
 }
 
-/**************************************************************************/
-/*!
-
-*/
-/**************************************************************************/
-void cmdSdWrite(int arg_cnt, char **args)
-{
-    char data[100];
-    
-    // concatenate strings typed into the command line and send it to
-    // the specified address
-    strCat(data, 1, arg_cnt, args);  
-    
-    if (!myFile.open(FILENAME, O_RDWR | O_CREAT | O_AT_END))
-
-    {
-      myFile.println(data);
-      myFile.close();
-    }
-    else
-    {
-      printf("Error opening dataFile\n");
-    }
-}
 
 /**************************************************************************/
 /*!
