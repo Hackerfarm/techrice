@@ -9,9 +9,6 @@
 
 #include <src/chb_eeprom.h>
 
-// void chb_eeprom_write(U16 addr, U8 *buf, U16 size)
-// void chb_eeprom_read(U16 addr, U8 *buf, U16 size)
-
 typedef struct{
   int32_t sensor_id;
   int32_t value;
@@ -32,34 +29,12 @@ typedef struct{
 } techrice_packet_t;
 
 
-#define NODE_ID 12
+
+techrice_packet_t main_packet;
+
+
+
 #define EDGE_ID BROADCAST_ADDR
-#define VSOL_SENSOR_ID 6
-#define VBAT_SENSOR_ID 7
-#define TEMPERATURE_SENSOR_ID 8
-#define HUMIDITY_SENSOR_ID 9
-#define DISTANCE_TO_WATER_SURFACE_SENSOR_ID 10
-
-
-techrice_packet_t main_packet = {
-  {VSOL_SENSOR_ID,0},
-  {VBAT_SENSOR_ID,0},
-  {TEMPERATURE_SENSOR_ID,0},
-  {HUMIDITY_SENSOR_ID,0},
-  {DISTANCE_TO_WATER_SURFACE_SENSOR_ID,0},
-  0,
-  0,
-  "",
-  NODE_ID
-};
-
-/*
-END OF OF API-GENERATED HEADER
-*/
-
-
-
-
 
 #define RTC_CLOCK_SOURCE 0b11 // Selects the clock source. 0b11 selects 1/60Hz clock.
 #define RTC_SLEEP 30 // Number of timer clock cycles before interrupt is generated.
@@ -68,8 +43,8 @@ END OF OF API-GENERATED HEADER
 
 #define EEPROM_CONF_ADDR 0x12
 
-#define DATECODE "08-09-2014"
-#define TITLE "SABOTEN 900 MHz Long Range\n"
+#define DATECODE "14-08-2016"
+#define TITLE "SABOTEN 900 MHz Long Range\n\r"
 #define FILENAME "TECHRICE.TXT"
 #define ADCREFVOLTAGE 3.3
 
@@ -161,22 +136,22 @@ void setup()
   // Initialize the chibi wireless stack
   chibiInit();
   
+  // Reads the node and sensors ID from the EEPROM
+  cmdReadConf(0,0);
+  
   // set up chibi regs for external P/A
   //chibiRegWrite(0x4, 0xA0);
     
   // datecode version
   printf(TITLE);
-  printf("Datecode: %s\n", DATECODE);
+  printf("Datecode: %s\n\r", DATECODE);
 
   pcf.writeDate(16, 1, 29, 4);
   pcf.writeTime(10, 15, 0);
 
-  chibiSetShortAddr(NODE_ID);
+  chibiSetShortAddr(main_packet.node_id);
 
-  Serial.print("NODE_ID: ");
-  Serial.println(main_packet.node_id);
-
-
+  
   // This is where you declare the commands for the command line.
   // The first argument is the alias you type in the command line. The second
   // argument is the name of the function that the command will jump to.
