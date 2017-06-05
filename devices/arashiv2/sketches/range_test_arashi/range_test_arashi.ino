@@ -15,14 +15,21 @@ IPAddress ip(192, 168, 1, 177);
 
 void setup() {
   Serial.begin(57600);
+  // ethernet chip select pin
+  // do not remove or the radio won't initialize correctly
+  pinMode(31, OUTPUT);
+  digitalWrite(31, HIGH);
 
-	Serial.println("Range Test Arashi v0.1");
+  Serial.println("Range Test Arashi v0.1");
   Serial.println("Init chibi stack");
-  Ethernet.begin(mac, ip);
+
+
   chibiInit();
   chibiSetShortAddr(NODE_ID);
   Serial.println("Init chibi stack complete");
   pinMode(ledPin, OUTPUT);
+  Ethernet.begin(mac, ip);
+
 }
 
 

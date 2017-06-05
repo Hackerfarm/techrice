@@ -1,18 +1,3 @@
-/*
-  Web client
-
- This sketch connects to a website (http://www.google.com)
- using an Arduino Wiznet Ethernet shield.
-
- Circuit:
- * Ethernet shield attached to pins 10, 11, 12, 13
-
- created 18 Dec 2009
- by David A. Mellis
- modified 9 Apr 2012
- by Tom Igoe, based on work by Adrian McEwen
-
- */
 
 #include <SPI.h>
 #include <Ethernet.h>
@@ -30,8 +15,8 @@ unsigned char old[100];
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-char server[] = "api.techrice.jp";
-const int port = 80;
+char server[] = "iv-labs.org";
+const int port = 8384;
 
 // Set the static IP address to use if the DHCP fails to assign
 IPAddress ip(192, 168, 1, random(100,200));
@@ -73,13 +58,25 @@ typedef struct{
 
 
 
-
+static FILE uartout = {0};
 
 int lastConnection = millis();
 void setup() {
-  // Open serial communications and wait for port to open:
-  Serial.begin(57600);
+    // fill in the UART file descriptor with pointer to writer.
+  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
+  // The uart is the standard output device STDOUT.
+  stdout = &uartout ;
+
+  // ethernet chip select pin
+  // do not remove or the radio won't initialize correctly
+  pinMode(31, OUTPUT);
+  digitalWrite(31, HIGH);
+
+
+  // Open serial communications and wait for port to open:
+   chibiCmdInit(57600);
+chibiInit();
   techrice_packet_t r = {
     {1,0},
     {1,0},
@@ -96,20 +93,19 @@ void setup() {
   packet_t p = {1, (char*)&r};
   Serial.println("Starting...");
   
-  
-  
+
+  IPAddress ip2(192, 168, 1, random(100,200));
+  printIPAddress();
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
-    // no point in carrying on, so do nothing forevermore:
+
     Ethernet.begin(mac, ip);
   }
-  // print your local IP address:
   printIPAddress();
   
-
   
   Serial.println("Init chibi stack");
-  chibiInit();
+
   chibiSetShortAddr(NODE_ID);
   Serial.println("Init chibi stack complete");
 
@@ -145,12 +141,17 @@ void loop()
       char http_body[300];
       char msg[100];
 
-    sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
-                (int) p.temperature.sensor_id, (int) p.temperature.value,
-                (int) p.humidity.sensor_id, (int) p.humidity.value,
-                (int) p.battery.sensor_id, (int) p.battery.value,
-                (int) p.solar.sensor_id, (int) p.solar.value,
-                (int) p.sonar.sensor_id, (int) p.sonar.value);
+      /*sprintf(http_body, "format=compact&readings=%d,%d;%d,%d;%d,%d;%d,%d;%d,%d",
+                  (int) p.temperature.sensor_id, (int) p.temperature.value,
+                  (int) p.humidity.sensor_id, (int) p.humidity.value,
+                  (int) p.battery.sensor_id, (int) p.battery.value,
+                  (int) p.solar.sensor_id, (int) p.solar.value,
+                  (int) p.sonar.sensor_id, (int) p.sonar.value);*/
+
+      sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
+                  (int) p.temperature.sensor_id, (int) p.temperature.value,
+                  (int) p.count, p.timestamp);
+
     sprintf(msg, "VBAT:%d  VSOL:%d  SONAR:%d  TIMESTAMP:%s",
                 (int) p.battery.value,
                 (int) p.solar.value,
@@ -165,7 +166,8 @@ void loop()
 
 void api_post(char *http_body){
   char http_header[400];
-  sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: api.techrice.jp\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
+  //sprintf(http_header, "POST /readings HTTP/1.1\r\nHost: api.techrice.jp\r\nAuthorization: Basic dGVjaHJpY2VAaGFja2VyLmZhcm06dW5peHRoZWdyZWF0\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
+  sprintf(http_header, "POST /new_reading HTTP/1.1\r\nHost: iv-labs.org:8384\r\nContent-Length: %d\r\nUser-Agent: arashi2\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n", strlen(http_body));
   strcat(http_header, http_body);
   Serial.println("WHOLE REQUEST");
   Serial.println(http_header);
@@ -196,6 +198,14 @@ void printIPAddress()
   Serial.println();
 }
 
-  
+
+/**************************************************************************/
+// This is to implement the printf function from within arduino
+/**************************************************************************/
+static int uart_putchar (char c, FILE *stream)
+{
+    Serial.write(c);
+    return 0;
+}
 
 
