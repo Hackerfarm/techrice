@@ -37,9 +37,9 @@
 #include "chibiUsrCfg.h"
 #include "types.h"
 
-#if (CHIBI_PROMISCUOUS)
-    #if (FREAKUSB1284P == 1)
-        // FREAKUSB1284P uses the ATMega1284P which has 16 kB RAM so we can crank up the 
+#if (CHIBI_PROMISCUOUS == 1)
+    #if defined(__AVR_ATmega1284P__) 
+        // If the ATMega1284P is used, it  has 16 kB RAM so we can crank up the 
         // radio buffer size
         #define CHB_BUF_SZ 10000
     #else
@@ -58,5 +58,6 @@ void chb_buf_init();
 void chb_buf_write(U8 data);
 U8 chb_buf_read();
 U16 chb_buf_get_len();
+U16 chb_buf_get_remaining();
 
 #endif

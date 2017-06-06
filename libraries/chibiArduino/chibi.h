@@ -65,6 +65,7 @@ uint8_t chibiGetData(uint8_t *data);
 uint8_t chibiGetRSSI();
 uint16_t chibiGetSrcAddr();
 uint8_t chibiSetChannel(uint8_t channel);
+uint8_t chibiGetChannel();
 uint8_t chibiGetPartID();
 void chibiSleepRadio(uint8_t enb);
 void chibiCmdInit(uint32_t speed);
@@ -78,6 +79,7 @@ uint8_t chibiAesDecrypt(uint8_t len, uint8_t *plaintext, uint8_t *ciphertext);
 void chibiSetDataRate(uint8_t rate);
 uint8_t chibiGetRand();
 void chibiSetMode(uint8_t mode);
+uint16_t chibiBufGetRemaining();
 
 void chibiAesTest(uint8_t *key);
 
