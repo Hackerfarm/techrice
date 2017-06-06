@@ -148,17 +148,30 @@ void loop()
                   (int) p.solar.sensor_id, (int) p.solar.value,
                   (int) p.sonar.sensor_id, (int) p.sonar.value);*/
 
-      sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
-                  (int) p.temperature.sensor_id, (int) p.temperature.value,
-                  (int) p.count, p.timestamp);
 
-    sprintf(msg, "VBAT:%d  VSOL:%d  SONAR:%d  TIMESTAMP:%s",
-                (int) p.battery.value,
-                (int) p.solar.value,
-                (int) p.sonar.value,
-                p.timestamp);
-    Serial.println(msg);
-      api_post(http_body);
+        sprintf(msg, "VBAT:%d  VSOL:%d  SONAR:%d  TIMESTAMP:%s",
+                    (int) p.battery.value,
+                    (int) p.solar.value,
+                    (int) p.sonar.value,
+                    p.timestamp);
+        Serial.println(msg);
+
+        sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
+                    (int) p.temperature.sensor_id, (int) p.temperature.value,
+                    (int) p.count, p.timestamp);
+        api_post(http_body);
+        sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
+                    (int) p.humidity.sensor_id, (int) p.humidity.value,
+                    (int) p.count, p.timestamp);
+        api_post(http_body);
+        sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
+                    (int) p.solar.sensor_id, (int) p.solar.value,
+                    (int) p.count, p.timestamp);
+        api_post(http_body);
+        sprintf(http_body, "sensorid=%d&value=%d&sequence=%d&timestamp=%s",
+                    (int) p.battery.sensor_id, (int) p.battery .value,
+                    (int) p.count, p.timestamp);
+        api_post(http_body);
     }
   }
   client.stop();
