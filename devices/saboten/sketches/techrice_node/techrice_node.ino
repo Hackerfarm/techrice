@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <pcf2127.h>
 #include <stdint.h>
+#include <OneWire.h>
 
 #include <src/chb_eeprom.h>
 
@@ -48,6 +49,8 @@ techrice_packet_t main_packet;
 #define FILENAME "TECHRICE.TXT"
 #define ADCREFVOLTAGE 3.3
 
+#define OneWireSensor 1
+
 int hgmPin = 22;
 int sdCsPin = 15;
 int rtcCsPin = 28; 
@@ -59,7 +62,9 @@ int sensorPin = 8;
 int sonarTriggerPin = 5;
 int sonarEchoPin = 7;
 int sonarAwakePin = 10;
-int burstModePin = 4;
+int debugModePin = 4;
+int burstModePin = 3;
+
 
 int debug_mode = 0;
 
@@ -72,10 +77,9 @@ static FILE uartout = {0};
 
 PCF2127 pcf(0, 0, 0, rtcCsPin);
 
-
-
-
-
+#ifdef OneWireSensor
+OneWire OW_temperature_probe(sensorPin);
+#endif
 
 
 
@@ -120,7 +124,8 @@ void setup()
   pinMode(sonarAwakePin, OUTPUT);
   digitalWrite(sonarAwakePin, HIGH);
 
-  // set up the burst mode pin
+  // set up the burst and debug mode pin
+  pinMode(debugModePin, INPUT_PULLUP);
   pinMode(burstModePin, INPUT_PULLUP);
 
   
@@ -176,7 +181,7 @@ void setup()
   
   // high gain mode
   digitalWrite(hgmPin, HIGH);
-  if(digitalRead(burstModePin)==LOW){
+  if(digitalRead(debugModePin)==LOW){
     debug_mode = 1;
     digitalWrite(sonarAwakePin, HIGH);
   }
@@ -189,7 +194,7 @@ void setup()
 void loop()
 {
   if(debug_mode==1){
-    if(digitalRead(burstModePin)==HIGH){
+    if(digitalRead(debugModePin)==HIGH){
       debug_mode = 0;
     }
     chibiCmdPoll();
@@ -197,7 +202,12 @@ void loop()
   }
   
   digitalWrite(sonarAwakePin, HIGH);
+
+#ifdef OneWireSensor
+  get_temp_ow(main_packet.temperature.value);
+#else
   get_temp(main_packet.temperature.value, main_packet.humidity.value);
+#endif
   get_vbat(main_packet.vbat.value);
   get_vsol(main_packet.vsol.value);
   get_sonar(main_packet.distance_to_water_surface.value);
@@ -655,6 +665,60 @@ bool get_sonar(int32_t &distance){
   digitalWrite(ledPin, LOW);*/
   
 }
+
+#ifdef OneWireSensor
+bool get_temp_ow(int32_t &temperature){
+    byte addr[8];
+    byte present = 0;
+    byte data[12];
+
+    if ( !OW_temperature_probe.search(addr)) {
+      Serial.println("No more addresses.");
+      Serial.println();
+      OW_temperature_probe.reset_search();
+      delay(250);
+      temperature=0;
+      OW_temperature_probe.search(addr);
+    }
+    Serial.print("ROM =");
+    for( int i = 0; i < 8; i++) {
+      Serial.write(' ');
+      Serial.print(addr[i], HEX);
+    }
+
+    OW_temperature_probe.reset();
+    OW_temperature_probe.select(addr);
+    OW_temperature_probe.write(0x44, 1);
+    delay(1000);
+    present = OW_temperature_probe.reset();
+    OW_temperature_probe.select(addr);
+    OW_temperature_probe.write(0xBE);         // Read Scratchpad
+    Serial.print("  Data = ");
+    Serial.print(present, HEX);
+    Serial.print(" ");
+    for ( int i = 0; i < 9; i++) {           // we need 9 bytes
+      data[i] = OW_temperature_probe.read();
+      Serial.print(data[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.print(" CRC=");
+    Serial.print(OneWire::crc8(data, 8), HEX);
+    Serial.println();
+
+    int16_t raw = (data[1] << 8) | data[0];
+    byte cfg = (data[4] & 0x60);
+    // at lower res, the low bits are undefined, so let's zero them
+    if (cfg == 0x00) raw = raw & ~7;  // 9 bit resolution, 93.75 ms
+    else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+    else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+    //// default is 12 bit resolution, 750 ms conversion time
+    float celsius = (float)raw / 16.0;
+    Serial.print("  Temperature = ");
+    Serial.println(celsius);
+    temperature = (int)(celsius*100);
+    return true;
+}
+#endif
 
 bool get_temp(int32_t &temperature, int32_t& humidity){
     
